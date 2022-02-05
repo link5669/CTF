@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>com.milesacq</groupId>
+  <artifactId>ScavengerHuntMaven</artifactId>
+  <versioning>
+    <versions>
+      <version>1.0-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20210615215834</lastUpdated>
+  </versioning>
+</metadata>
