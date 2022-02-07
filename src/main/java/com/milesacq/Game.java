@@ -20,13 +20,17 @@ import org.bukkit.scoreboard.*;
 import java.util.List;
 
 public class Game {
+    private Block redStart;
+    private Block blueStart;
     private Block redGoal;
     private Block blueGoal;
     private BossBar redBar;
     private BossBar blueBar;
 
-    public Game(Location redGoal, Location blueGoal) {
-        this.redGoal = redGoal.getBlock();;
+    public Game(Location redStart, Location blueStart, Location redGoal, Location blueGoal) {
+        this.redStart = redStart.getBlock();;
+        this.blueStart = blueStart.getBlock();
+        this.redGoal = redGoal.getBlock();
         this.blueGoal = blueGoal.getBlock();
         this.redBar = Bukkit.createBossBar(
                 ChatColor.DARK_RED + "Red Score" ,
@@ -65,18 +69,26 @@ public class Game {
     }
 
     public boolean checkRedFlag(Block testBlock) {
-        return this.redGoal.equals(testBlock);
+        return this.redStart.equals(testBlock);
     }
 
     public boolean checkBlueFlag(Block testBlock) {
+        return this.blueStart.equals(testBlock);
+    }
+
+    public boolean checkRedGoal(Block testBlock) {
+        return this.redGoal.equals(testBlock);
+    }
+
+    public boolean checkBlueGoal(Block testBlock) {
         return this.blueGoal.equals(testBlock);
     }
 
 //    @EventHandler
 //    public void onPlace(BlockPlaceEvent event) {
-//        if (event.getBlock().getLocation().equals(this.redGoal)) {
+//        if (event.getBlock().getLocation().equals(this.redStart)) {
 //            increaseRedScore();
-//        } else if (event.getBlock().getLocation().equals(this.blueGoal)) {
+//        } else if (event.getBlock().getLocation().equals(this.blueStart)) {
 //            increaseBlueScore();
 //        }
 //    }
