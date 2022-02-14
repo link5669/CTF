@@ -41,6 +41,14 @@ public class Game {
         return this.redStart.equals(testBlock);
     }
 
+    public boolean checkRedStartEmpty() {
+        return this.redStart.getType().equals(Material.AIR);
+    }
+
+    public boolean checkBlueStartEmpty() {
+        return this.blueStart.getType().equals(Material.AIR);
+    }
+
     public boolean checkBlueFlag(Block testBlock) {
         return this.blueStart.equals(testBlock);
     }
@@ -59,7 +67,6 @@ public class Game {
     }
 
     public boolean addPoint(Team team) {
-        System.out.println("game add point, returning true");
         return team.addPoint();
     }
 
