@@ -18,6 +18,12 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
 public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     public Game newGame;
     public Team redTeam;
@@ -32,6 +38,7 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     private static final double[] BLUERESPAWNLOCATION = new double[3]; //5
     private int setupStep = 6;
     private String WORLDNAME = "CTFManors";
+    private String configName;
 
     @Override
     public void onEnable() {
@@ -65,12 +72,7 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (cmd.getName().equalsIgnoreCase("ctf")) {
             if (args[0].equalsIgnoreCase("start")) {
-                Location blueFlagStart = new Location(this.getServer().getWorld("world"), BLUESTARTCOORDS[0], BLUESTARTCOORDS[1], BLUESTARTCOORDS[2]);
-                Location redFlagStart = new Location(this.getServer().getWorld("world"), REDSTARTCOORDS[0], REDSTARTCOORDS[1], REDSTARTCOORDS[2]);
-                Location redFlagGoal = new Location(this.getServer().getWorld("world"), REDGOALCOORDS[0], REDGOALCOORDS[1], REDGOALCOORDS[2]);
-                Location blueFlagGoal = new Location(this.getServer().getWorld("world"), BLUEGOALCOORDS[0], BLUEGOALCOORDS[1], BLUEGOALCOORDS[2]);
-                newGame.setCoords(redFlagStart, blueFlagStart, redFlagGoal, blueFlagGoal);
-                IndividualScoreboard board = new IndividualScoreboard(blueTeam, redTeam);
+                startGame();
             } else if (args[0].equalsIgnoreCase("blueteam")) {
                 if (args[1].equalsIgnoreCase("create")) {
                     if (args[2] == null) {
@@ -97,17 +99,110 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
                         newGame.giveWool(player2);
                     }
                 }
-            } else if (args[0].equalsIgnoreCase("setup")) {
-                setupStep = 0;
-                sender.sendMessage("Place block at blue flag start");
-            } else if (args[0].equalsIgnoreCase("status")) {
-                sender.sendMessage("Blue flag start: " + BLUESTARTCOORDS[0] + ", " + BLUESTARTCOORDS[1] + ", " + BLUESTARTCOORDS[2]);
-                sender.sendMessage("Red flag start: " + REDSTARTCOORDS[0] + ", " + REDSTARTCOORDS[1] + ", " + REDSTARTCOORDS[2]);
-                sender.sendMessage("Blue flag goal: " + BLUEGOALCOORDS[0] + ", " + BLUEGOALCOORDS[1] + ", " + BLUEGOALCOORDS[2]);
-                sender.sendMessage("Red flag goal: " + REDGOALCOORDS[0] + ", " + REDGOALCOORDS[1] + ", " + REDGOALCOORDS[2]);
+            } else if (args[0].equalsIgnoreCase("setup") ) {
+                if (args[2] == null) {
+                    sender.sendMessage("Please specify config name");
+                    return true;
+                }
+                configName = args[2];
+                if (args[1].equalsIgnoreCase("create")) {
+                    createConfig(sender);
+                } else if (args[1].equalsIgnoreCase("read")) {
+                    readFromFile(sender);
+                }
+            } else if (args[0].equalsIgnoreCase("help")) {
+                help(sender);
             }
         }
         return true;
+    }
+
+    private void startGame() {
+        Location blueFlagStart = new Location(this.getServer().getWorld(WORLDNAME), BLUESTARTCOORDS[0], BLUESTARTCOORDS[1], BLUESTARTCOORDS[2]);
+        Location redFlagStart = new Location(this.getServer().getWorld(WORLDNAME), REDSTARTCOORDS[0], REDSTARTCOORDS[1], REDSTARTCOORDS[2]);
+        Location redFlagGoal = new Location(this.getServer().getWorld(WORLDNAME), REDGOALCOORDS[0], REDGOALCOORDS[1], REDGOALCOORDS[2]);
+        Location blueFlagGoal = new Location(this.getServer().getWorld(WORLDNAME), BLUEGOALCOORDS[0], BLUEGOALCOORDS[1], BLUEGOALCOORDS[2]);
+        newGame.setCoords(redFlagStart, blueFlagStart, redFlagGoal, blueFlagGoal);
+        IndividualScoreboard board = new IndividualScoreboard(blueTeam, redTeam);
+    }
+
+    private void help(CommandSender sender) {
+        sender.sendMessage("Configure a map with /ctf setup filename");
+        sender.sendMessage("Get a red and blue flag with /ctf give");
+        sender.sendMessage("To start a game, create red and blue teams and specify the number of players with /ctf redteam create 1");
+        sender.sendMessage("Add players to a team with /ctf blueteam add link5669");
+        sender.sendMessage("See all the players on a team with /ctf blueteam list");
+        sender.sendMessage("Start the game with /ctf start");
+    }
+
+    private void createConfig(CommandSender sender) {
+        setupStep = 0;
+        sender.sendMessage("Place block at blue flag start");
+        try {
+            File myObj = new File(configName + ".txt");
+            if (myObj.createNewFile()) {
+                sender.sendMessage("File created: " + myObj.getName());
+            } else {
+                sender.sendMessage("File already exists.");
+            }
+        } catch (IOException e) {
+            sender.sendMessage("An error occurred.");
+            e.printStackTrace();
+        }
+    }
+
+    private void readFromFile(CommandSender sender) {
+        try {
+            File myObj = new File(configName + ".txt");
+            Scanner myReader = new Scanner(myObj);
+            String data = myReader.nextLine();
+//                        populateSetup(data, BLUESTARTCOORDS, myReader);
+//                        populateSetup(data, REDSTARTCOORDS, myReader);
+//                        populateSetup(data, BLUEGOALCOORDS, myReader);
+//                        populateSetup(data, REDGOALCOORDS, myReader);
+//                        populateSetup(data, REDRESPAWNLOCATION, myReader);
+//                        populateSetup(data, BLUERESPAWNLOCATION, myReader);
+            for (int i = 0; i < 3; i++) {
+                BLUESTARTCOORDS[i] = Double.parseDouble(data);
+                data = myReader.nextLine();
+            }
+            for (int i = 0; i < 3; i++) {
+                REDSTARTCOORDS[i] = Double.parseDouble(data);
+                data = myReader.nextLine();
+            }
+            for (int i = 0; i < 3; i++) {
+                BLUEGOALCOORDS[i] = Double.parseDouble(data);
+                data = myReader.nextLine();
+            }
+            for (int i = 0; i < 3; i++) {
+                REDGOALCOORDS[i] = Double.parseDouble(data);
+                data = myReader.nextLine();
+            }
+            for (int i = 0; i < 3; i++) {
+                REDRESPAWNLOCATION[i] = Double.parseDouble(data);
+                data = myReader.nextLine();
+            }
+            for (int i = 0; i < 3; i++) {
+                BLUERESPAWNLOCATION[i] = Double.parseDouble(data);
+                if (myReader.hasNextLine()) {
+                    data = myReader.nextLine();
+                }
+            }
+            myReader.close();
+            setBlocks();
+        } catch (FileNotFoundException e) {
+            sender.sendMessage("An error occurred.");
+            e.printStackTrace();
+        }
+    }
+
+    private void populateSetup(String data, double[] arr, Scanner myReader) {
+        for (int i = 0; i < 3; i++) {
+            arr[i] = Double.parseDouble(data);
+            if (myReader.hasNextLine()) {
+                data = myReader.nextLine();
+            }
+        }
     }
 
     private void teamCommand(CommandSender sender, String[] args, Team team) {
@@ -141,53 +236,54 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
         }
     }
 
+    private void setup(double[] arr, Location placedBlockLocation) {
+        arr[0] = placedBlockLocation.getX() + .5;
+        arr[1] = placedBlockLocation.getY() + .5;
+        arr[2] = placedBlockLocation.getZ() + .5;
+        setupStep++;
+    }
+
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
+        if (this.blueTeam == null || this.redTeam == null) {
+            return;
+        }
         String placedBlock = event.getBlock().getBlockData().toString();
         Location placedBlockLocation = event.getBlock().getLocation();
         if (setupStep != 6) {
             switch (setupStep) {
                 case 0:
-                    BLUESTARTCOORDS[0] = placedBlockLocation.getX() + .5;
-                    BLUESTARTCOORDS[1] = placedBlockLocation.getY() + .5;
-                    BLUESTARTCOORDS[2] = placedBlockLocation.getZ() + .5;
+                    setup(BLUESTARTCOORDS, placedBlockLocation);
                     event.getPlayer().sendMessage("Place block at red flag start");
-                    setupStep++;
                     return;
                 case 1:
-                    REDSTARTCOORDS[0] = placedBlockLocation.getX() + .5;
-                    REDSTARTCOORDS[1] = placedBlockLocation.getY() + .5;
-                    REDSTARTCOORDS[2] = placedBlockLocation.getZ() + .5;
+                    setup(REDSTARTCOORDS, placedBlockLocation);
                     event.getPlayer().sendMessage("Place block at blue flag goal (opposite color!)");
-                    setupStep++;
                     return;
                 case 2:
-                    BLUEGOALCOORDS[0] = placedBlockLocation.getX() + .5;
-                    BLUEGOALCOORDS[1] = placedBlockLocation.getY() + .5;
-                    BLUEGOALCOORDS[2] = placedBlockLocation.getZ() + .5;
+                    setup(BLUEGOALCOORDS, placedBlockLocation);
                     event.getPlayer().sendMessage("Place block at red flag goal (opposite color!)");
-                    setupStep++;
                     return;
                 case 3:
-                    REDGOALCOORDS[0] = placedBlockLocation.getX() + .5;
-                    REDGOALCOORDS[1] = placedBlockLocation.getY() + .5;
-                    REDGOALCOORDS[2] = placedBlockLocation.getZ() + .5;
+                    setup(REDGOALCOORDS, placedBlockLocation);
                     event.getPlayer().sendMessage("Place block at red team spawn");
-                    setupStep++;
                     return;
                 case 4:
-                    REDRESPAWNLOCATION[0] = placedBlockLocation.getX() + .5;
-                    REDRESPAWNLOCATION[1] = placedBlockLocation.getY() + .5;
-                    REDRESPAWNLOCATION[2] = placedBlockLocation.getZ() + .5;
+                    setup(REDRESPAWNLOCATION, placedBlockLocation);
                     event.getPlayer().sendMessage("Place block at blue team spawn");
-                    setupStep++;
                     return;
                 case 5:
-                    BLUERESPAWNLOCATION[0] = placedBlockLocation.getX() + .5;
-                    BLUERESPAWNLOCATION[1] = placedBlockLocation.getY() + .5;
-                    BLUERESPAWNLOCATION[2] = placedBlockLocation.getZ() + .5;
+                    setup(BLUERESPAWNLOCATION, placedBlockLocation);
                     event.getPlayer().sendMessage("Setup complete!");
-                    setupStep++;
+                    try {
+                        FileWriter myWriter = new FileWriter(configName + ".txt");
+                        myWriter.write(BLUESTARTCOORDS[0] + "\n" + BLUESTARTCOORDS[1] + "\n" + BLUESTARTCOORDS[2] + "\n" + REDSTARTCOORDS[0] + "\n" + REDSTARTCOORDS[1] + "\n" + REDSTARTCOORDS[2] + "\n" + BLUEGOALCOORDS[0] + "\n" + BLUEGOALCOORDS[1] + "\n" + BLUEGOALCOORDS[2] + "\n" + REDGOALCOORDS[0] + "\n" + REDGOALCOORDS[1] + "\n" + REDGOALCOORDS[2] + "\n" + REDRESPAWNLOCATION[0] + "\n" + REDRESPAWNLOCATION[1] + "\n" + REDRESPAWNLOCATION[2] + "\n" + BLUERESPAWNLOCATION[0] + "\n" + BLUERESPAWNLOCATION[1] + "\n" + BLUERESPAWNLOCATION[2] + "\n");
+                        myWriter.close();
+                        event.getPlayer().sendMessage("Created " + configName + ".txt!");
+                    } catch (IOException e) {
+                        System.out.println("An error occurred.");
+                        e.printStackTrace();
+                    }
                     return;
             }
         }
@@ -218,10 +314,14 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
         Location redGoal = new Location(getServer().getWorld(WORLDNAME), REDGOALCOORDS[0], REDGOALCOORDS[1], REDGOALCOORDS[2]);
         Location blueStart = new Location(getServer().getWorld(WORLDNAME), BLUESTARTCOORDS[0], BLUESTARTCOORDS[1], BLUESTARTCOORDS[2]);
         Location redStart = new Location(getServer().getWorld(WORLDNAME), REDSTARTCOORDS[0], REDSTARTCOORDS[1], REDSTARTCOORDS[2]);
+        Location bluePlayerStart = new Location(getServer().getWorld(WORLDNAME), BLUERESPAWNLOCATION[0], BLUERESPAWNLOCATION[1], BLUERESPAWNLOCATION[2]);
+        Location redPlayerStart = new Location(getServer().getWorld(WORLDNAME), REDRESPAWNLOCATION[0], REDRESPAWNLOCATION[1], REDRESPAWNLOCATION[2]);
         blueGoal.getBlock().setType(Material.AIR);
         redGoal.getBlock().setType(Material.AIR);
         blueStart.getBlock().setType(Material.BLUE_WOOL);
         redStart.getBlock().setType(Material.RED_WOOL);
+        bluePlayerStart.getBlock().setType(Material.AIR);
+        redPlayerStart.getBlock().setType(Material.AIR);
     }
 
     private void checkPoint(BlockPlaceEvent event, Team team) {
@@ -272,6 +372,13 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
+        if (this.blueTeam == null || this.redTeam == null) {
+            return;
+        }
+        event.getPlayer().sendMessage(String.valueOf(setupStep));
+        if (setupStep < 6) {
+            return;
+        }
         if (newGame.checkRedFlag(event.getBlock())) {
             if (checkTeam(event.getPlayer()) == 2) {
                 event.getPlayer().sendMessage("That's your flag!");
@@ -337,6 +444,9 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        if (this.blueTeam == null || this.redTeam == null) {
+            return;
+        }
         int team = checkTeam(event.getEntity());
         if (team == 1) {
             if (newGame.checkRedStartEmpty()) {
@@ -374,6 +484,9 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
 
     @EventHandler
     public void onPlayerRespawnEvent(PlayerRespawnEvent event) {
+        if (this.blueTeam == null || this.redTeam == null) {
+            return;
+        }
         if (redTeam.search(event.getPlayer())) {
             Location spawn = new Location(this.getServer().getWorld(WORLDNAME),REDRESPAWNLOCATION[0], REDRESPAWNLOCATION[1], REDRESPAWNLOCATION[2]);
             event.setRespawnLocation(spawn);
@@ -386,6 +499,9 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
+        if (this.blueTeam == null || this.redTeam == null) {
+            return;
+        }
         if (blueTeam.search(event.getPlayer()) || redTeam.search(event.getPlayer())) {
             blueTeam.showBar(event.getPlayer());
             redTeam.showBar(event.getPlayer());
@@ -396,9 +512,7 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     private boolean blockEquals(Location one, Location two) {
         if (one.getX() == two.getX()) {
             if (one.getY() == two.getY()) {
-                if (one.getZ() == two.getZ()) {
-                    return true;
-                }
+                return one.getZ() == two.getZ();
             }
         }
         return false;
