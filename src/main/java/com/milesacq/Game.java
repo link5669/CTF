@@ -38,7 +38,7 @@ public class Game {
     }
 
     public boolean checkRedFlag(Block testBlock) {
-        return this.redStart.equals(testBlock);
+        return blockEquals(this.redStart, testBlock);
     }
 
     public boolean checkRedStartEmpty() {
@@ -50,20 +50,15 @@ public class Game {
     }
 
     public boolean checkBlueFlag(Block testBlock) {
-        return this.blueStart.equals(testBlock);
+        return blockEquals(this.blueStart, testBlock);
     }
 
     public boolean checkRedGoal(Block testBlock) {
-        return this.redGoal.equals(testBlock);
+        return blockEquals(this.redGoal, testBlock);
     }
 
     public boolean checkBlueGoal(Block testBlock) {
-        return this.blueGoal.equals(testBlock);
-    }
-
-    public boolean checkValidLocation(Location location) {
-        return location.equals(this.redGoal.getLocation()) || location.equals(this.blueGoal.getLocation()) ||
-                location.equals(this.blueStart.getLocation()) || location.equals(this.redStart.getLocation());
+        return blockEquals(this.blueGoal, testBlock);
     }
 
     public boolean addPoint(Team team) {
@@ -85,5 +80,16 @@ public class Game {
         redMeta.addEnchant(Enchantment.LUCK, 10, true);
         redWool.setItemMeta(redMeta);
         player.getInventory().setItem(2, redWool);
+    }
+
+    private boolean blockEquals(Block one, Block two) {
+        if (one.getLocation().getX() == two.getLocation().getX()) {
+            if (one.getLocation().getY() == two.getLocation().getY()) {
+                if (one.getLocation().getZ() == two.getLocation().getZ()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
