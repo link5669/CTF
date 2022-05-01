@@ -34,7 +34,6 @@ public class IndividualScoreboard {
         score4.setScore(0);
 
         for (Player online : Bukkit.getOnlinePlayers()) {
-            System.out.println(online.toString());
             if (team.search(online)) {
                 online.setScoreboard(redBoard);
             }
