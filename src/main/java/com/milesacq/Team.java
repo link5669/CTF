@@ -42,7 +42,6 @@ public class Team {
     }
     public boolean addPoint() {
         this.points++;
-        System.out.println(this.bossBar.getProgress());
         if (this.bossBar.getProgress() > .6) {
             this.bossBar.setProgress(1);
             return true;
@@ -69,13 +68,13 @@ public class Team {
         return false;
     }
     public boolean addPlayer(Player player) {
-        if (members[0] == null) {
-            members[0] = player;
+        if (this.members[0] == null) {
+            this.members[0] = player;
             return true;
         } else {
             for (int i = 0; i < this.members.length; i++) {
-                if (members[i] == null) {
-                    members[i] = player;
+                if (this.members[i] == null) {
+                    this.members[i] = player;
                     return true;
                 }
             }
