@@ -14,7 +14,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -24,11 +24,14 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     public Team blueTeam;
     private ItemStack[] blueInv;
     private ItemStack[] redInv;
-    private static final double[] BLUESTARTCOORDS = {-289.5, 84.5, -216.5};
-    private static final double[] REDSTARTCOORDS = {-289.5, 84.5, -222.5};
-    private static final double[] BLUEGOALCOORDS = {-289.5, 84.5, -220.5};
-    private static final double[] REDGOALCOORDS = {-291.5, 84.5, -216.5};
-
+    private static final double[] BLUESTARTCOORDS = new double[3]; //0
+    private static final double[] REDSTARTCOORDS = new double[3]; //1
+    private static final double[] BLUEGOALCOORDS = new double[3]; //2
+    private static final double[] REDGOALCOORDS = new double[3]; //3
+    private static final double[] REDRESPAWNLOCATION = new double[3]; //4
+    private static final double[] BLUERESPAWNLOCATION = new double[3]; //5
+    private int setupStep = 6;
+    private String WORLDNAME = "CTFManors";
 
     @Override
     public void onEnable() {
@@ -39,8 +42,10 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
 
     @Override
     public void onDisable() {
-        if (this.newGame != null) {
+        if (this.redTeam != null) {
             redTeam.removeBar();
+        }
+        if (this.blueTeam != null) {
             blueTeam.removeBar();
         }
         for (Player player : Bukkit.getOnlinePlayers()){
@@ -92,49 +97,154 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
                         newGame.giveWool(player2);
                     }
                 }
+            } else if (args[0].equalsIgnoreCase("setup")) {
+                setupStep = 0;
+                sender.sendMessage("Place block at blue flag start");
+            } else if (args[0].equalsIgnoreCase("status")) {
+                sender.sendMessage("Blue flag start: " + BLUESTARTCOORDS[0] + ", " + BLUESTARTCOORDS[1] + ", " + BLUESTARTCOORDS[2]);
+                sender.sendMessage("Red flag start: " + REDSTARTCOORDS[0] + ", " + REDSTARTCOORDS[1] + ", " + REDSTARTCOORDS[2]);
+                sender.sendMessage("Blue flag goal: " + BLUEGOALCOORDS[0] + ", " + BLUEGOALCOORDS[1] + ", " + BLUEGOALCOORDS[2]);
+                sender.sendMessage("Red flag goal: " + REDGOALCOORDS[0] + ", " + REDGOALCOORDS[1] + ", " + REDGOALCOORDS[2]);
             }
         }
         return true;
     }
 
-    private void teamCommand(CommandSender sender, String[] args, Team redTeam) {
+    private void teamCommand(CommandSender sender, String[] args, Team team) {
         if (args[1].equalsIgnoreCase("add")) {
-            Player player = Bukkit.getPlayer(args[2]);
-            if (redTeam.addPlayer(player)) {
-                sender.sendMessage("Successfuly added!");
-            } else {
-                sender.sendMessage("Couldn't add!");
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (player.toString().equals("CraftPlayer{name="+args[2]+"}")) {
+                    if (this.redTeam != null) {
+                        if (this.redTeam.search(player)) {
+                            sender.sendMessage("Player already on Red Team");
+                            return;
+                        }
+                    }
+                    if (this.blueTeam != null) {
+                        if (this.blueTeam.search(player)) {
+                            sender.sendMessage("Player already on Blue Team");
+                            return;
+                        }
+                    }
+                    if (team.addPlayer(player)) {
+                        sender.sendMessage("Successfuly added!");
+                        return;
+                    } else {
+                        sender.sendMessage("Couldn't add! Team already full");
+                        return;
+                    }
+                }
             }
+            sender.sendMessage("Player not in game!");
         } else if (args[1].equalsIgnoreCase("list")) {
-            getLogger().info(redTeam.toString());
+            getLogger().info(team.toString());
         }
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (event.getBlock().getBlockData().toString().equals("CraftBlockData{minecraft:blue_wool}")
-                && newGame.getBlueGoalLocation().equals(event.getBlock().getLocation())) {
+        String placedBlock = event.getBlock().getBlockData().toString();
+        Location placedBlockLocation = event.getBlock().getLocation();
+        if (setupStep != 6) {
+            switch (setupStep) {
+                case 0:
+                    BLUESTARTCOORDS[0] = placedBlockLocation.getX() + .5;
+                    BLUESTARTCOORDS[1] = placedBlockLocation.getY() + .5;
+                    BLUESTARTCOORDS[2] = placedBlockLocation.getZ() + .5;
+                    event.getPlayer().sendMessage("Place block at red flag start");
+                    setupStep++;
+                    return;
+                case 1:
+                    REDSTARTCOORDS[0] = placedBlockLocation.getX() + .5;
+                    REDSTARTCOORDS[1] = placedBlockLocation.getY() + .5;
+                    REDSTARTCOORDS[2] = placedBlockLocation.getZ() + .5;
+                    event.getPlayer().sendMessage("Place block at blue flag goal (opposite color!)");
+                    setupStep++;
+                    return;
+                case 2:
+                    BLUEGOALCOORDS[0] = placedBlockLocation.getX() + .5;
+                    BLUEGOALCOORDS[1] = placedBlockLocation.getY() + .5;
+                    BLUEGOALCOORDS[2] = placedBlockLocation.getZ() + .5;
+                    event.getPlayer().sendMessage("Place block at red flag goal (opposite color!)");
+                    setupStep++;
+                    return;
+                case 3:
+                    REDGOALCOORDS[0] = placedBlockLocation.getX() + .5;
+                    REDGOALCOORDS[1] = placedBlockLocation.getY() + .5;
+                    REDGOALCOORDS[2] = placedBlockLocation.getZ() + .5;
+                    event.getPlayer().sendMessage("Place block at red team spawn");
+                    setupStep++;
+                    return;
+                case 4:
+                    REDRESPAWNLOCATION[0] = placedBlockLocation.getX() + .5;
+                    REDRESPAWNLOCATION[1] = placedBlockLocation.getY() + .5;
+                    REDRESPAWNLOCATION[2] = placedBlockLocation.getZ() + .5;
+                    event.getPlayer().sendMessage("Place block at blue team spawn");
+                    setupStep++;
+                    return;
+                case 5:
+                    BLUERESPAWNLOCATION[0] = placedBlockLocation.getX() + .5;
+                    BLUERESPAWNLOCATION[1] = placedBlockLocation.getY() + .5;
+                    BLUERESPAWNLOCATION[2] = placedBlockLocation.getZ() + .5;
+                    event.getPlayer().sendMessage("Setup complete!");
+                    setupStep++;
+                    return;
+            }
+        }
+        if (!(placedBlock.equals("CraftBlockData{minecraft:blue_wool}") || placedBlock.equals("CraftBlockData{minecraft:red_wool}"))) {
             event.setCancelled(false);
-        } else event.setCancelled(!event.getBlock().getBlockData().toString().equals("CraftBlockData{minecraft:red_wool}")
-                || !newGame.getRedGoalLocation().equals(event.getBlock().getLocation()));
-        if (newGame.checkRedGoal(event.getBlock()) && event.getBlock().getBlockData().toString().equals("CraftBlockData{minecraft:red_wool}")) {
+            return;
+        }
+        if (placedBlock.equals("CraftBlockData{minecraft:blue_wool}") && blockEquals(newGame.getBlueGoalLocation(), placedBlockLocation)) {
+            event.setCancelled(false);
+        } else {
+            event.setCancelled(!placedBlock.equals("CraftBlockData{minecraft:red_wool}") || !blockEquals(newGame.getRedGoalLocation(), placedBlockLocation));
+        }
+        if (newGame.checkRedGoal(event.getBlock()) && placedBlock.equals("CraftBlockData{minecraft:red_wool}")) {
             for (int i = 0; i < 36; i++) {
                 event.getPlayer().getInventory().setItem(i, redInv[i]);
             }
-            checkPoint(event, redTeam, Material.RED_WOOL);
-        } else if (newGame.checkBlueGoal(event.getBlock()) && event.getBlock().getBlockData().toString().equals("CraftBlockData{minecraft:blue_wool}")) {
+            checkPoint(event, redTeam);
+        } else if (newGame.checkBlueGoal(event.getBlock()) && placedBlock.equals("CraftBlockData{minecraft:blue_wool}")) {
             for (int i = 0; i < 36; i++) {
                 event.getPlayer().getInventory().setItem(i, blueInv[i]);
             }
-            checkPoint(event, blueTeam, Material.BLUE_WOOL);
+            checkPoint(event, blueTeam);
         }
     }
 
-    private void checkPoint(BlockPlaceEvent event, Team team, Material wool) {
-        newGame.getRedGoalLocation().getBlock().setType(Material.AIR);
-        newGame.getRedStartLocation().getBlock().setType(wool);
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(team.toString() + " scored a point!");
+    private void setBlocks() {
+        Location blueGoal = new Location(getServer().getWorld(WORLDNAME), BLUEGOALCOORDS[0], BLUEGOALCOORDS[1], BLUEGOALCOORDS[2]);
+        Location redGoal = new Location(getServer().getWorld(WORLDNAME), REDGOALCOORDS[0], REDGOALCOORDS[1], REDGOALCOORDS[2]);
+        Location blueStart = new Location(getServer().getWorld(WORLDNAME), BLUESTARTCOORDS[0], BLUESTARTCOORDS[1], BLUESTARTCOORDS[2]);
+        Location redStart = new Location(getServer().getWorld(WORLDNAME), REDSTARTCOORDS[0], REDSTARTCOORDS[1], REDSTARTCOORDS[2]);
+        blueGoal.getBlock().setType(Material.AIR);
+        redGoal.getBlock().setType(Material.AIR);
+        blueStart.getBlock().setType(Material.BLUE_WOOL);
+        redStart.getBlock().setType(Material.RED_WOOL);
+    }
+
+    private void checkPoint(BlockPlaceEvent event, Team team) {
+        if (team.equals(redTeam)) {
+            if (newGame.getBlueStartLocation().getBlock().equals(Material.BLUE_WOOL)) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage("The other team has your flag!");
+            }
+            setBlocks();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.sendMessage("Blue team scored a point!");
+            }
+            team = blueTeam;
+        } else {
+            if (newGame.getRedStartLocation().getBlock().equals(Material.RED_WOOL)) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage("The other team has your flag!");
+            }
+            setBlocks();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.sendMessage("Red team scored a point!");
+            }
+            team = redTeam;
         }
         if (newGame.addPoint(team)) {
             winGame(team);
@@ -142,8 +252,14 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     }
 
     private void winGame(Team team) {
-        for (Player player : Bukkit.getOnlinePlayers()){
-            player.sendTitle(team.toString() + "wins!", "yes they did");
+        if (team.equals(redTeam)) {
+            for (Player player : Bukkit.getOnlinePlayers()){
+                player.sendTitle(ChatColor.RED + "Red team wins!", "yes they did");
+            }
+        } else {
+            for (Player player : Bukkit.getOnlinePlayers()){
+                player.sendTitle(ChatColor.BLUE + "Blue team wins!", "yes they did");
+            }
         }
         if (this.newGame != null) {
             redTeam.removeBar();
@@ -162,6 +278,7 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
                 event.setCancelled(true);
             } else {
                 event.setCancelled(false);
+                event.setDropItems(false);
                 pickedUpFlag(event.getPlayer(), false);
             }
         } else if (newGame.checkBlueFlag(event.getBlock())) {
@@ -170,8 +287,8 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
                 event.setCancelled(true);
             } else {
                 event.setCancelled(false);
+                event.setDropItems(false);
                 pickedUpFlag(event.getPlayer(), true);
-                //fill inventory with wool
             }
         }
     }
@@ -197,6 +314,9 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
         }
         for (int i = 0; i < 36; i++) {
             player.getInventory().setItem(i, wool);
+        }
+        for (Player playerCurr : Bukkit.getOnlinePlayers()) {
+            playerCurr.sendMessage(player.getDisplayName() + "has the flag!");
         }
     }
 
@@ -253,13 +373,34 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     }
 
     @EventHandler
+    public void onPlayerRespawnEvent(PlayerRespawnEvent event) {
+        if (redTeam.search(event.getPlayer())) {
+            Location spawn = new Location(this.getServer().getWorld(WORLDNAME),REDRESPAWNLOCATION[0], REDRESPAWNLOCATION[1], REDRESPAWNLOCATION[2]);
+            event.setRespawnLocation(spawn);
+        } else if (blueTeam.search(event.getPlayer())){
+            Location spawn = new Location(this.getServer().getWorld(WORLDNAME),BLUERESPAWNLOCATION[0], BLUERESPAWNLOCATION[1], BLUERESPAWNLOCATION[2]);
+            event.setRespawnLocation(spawn);
+        }
+    }
+
+
+    @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        System.out.println(blueTeam.search(event.getPlayer()));
-        System.out.println(redTeam.search(event.getPlayer()));
         if (blueTeam.search(event.getPlayer()) || redTeam.search(event.getPlayer())) {
             blueTeam.showBar(event.getPlayer());
             redTeam.showBar(event.getPlayer());
             IndividualScoreboard board = new IndividualScoreboard(blueTeam, redTeam);
         }
+    }
+
+    private boolean blockEquals(Location one, Location two) {
+        if (one.getX() == two.getX()) {
+            if (one.getY() == two.getY()) {
+                if (one.getZ() == two.getZ()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
