@@ -16,7 +16,7 @@ public class Team {
     public Team(int numMembers, boolean color) {
         this.members = new Player[numMembers];
         this.points = 0;
-        if (color) {
+        if (!color) {
             this.bossBar = Bukkit.createBossBar(
                     ChatColor.DARK_RED + "Red Score",
                     BarColor.RED,
