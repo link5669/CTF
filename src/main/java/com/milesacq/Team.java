@@ -9,14 +9,12 @@ import org.bukkit.entity.Player;
 
 public class Team {
     private Player[] members;
-    private int points;
     private BossBar bossBar;
     private int deaths;
 
-    public Team(int numMembers, boolean color) {
+    public Team(int numMembers, TeamType color) {
         this.members = new Player[numMembers];
-        this.points = 0;
-        if (!color) {
+        if (color == TeamType.RED) {
             this.bossBar = Bukkit.createBossBar(
                     ChatColor.DARK_RED + "Red Score",
                     BarColor.RED,
@@ -31,6 +29,11 @@ public class Team {
         for (Player p:Bukkit.getOnlinePlayers()){
             bossBar.addPlayer(p);
         }
+        if (color == TeamType.BLUE) {
+            GameSingleton.setBlueTeam(this);
+        } else{
+            GameSingleton.setRedTeam(this);
+        }
     }
 
     public void removeBar() {
@@ -41,7 +44,6 @@ public class Team {
         this.bossBar.addPlayer(player);
     }
     public boolean addPoint() {
-        this.points++;
         if (this.bossBar.getProgress() > .6) {
             this.bossBar.setProgress(1);
             return true;

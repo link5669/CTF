@@ -14,7 +14,7 @@ public class IndividualScoreboard {
     private void setupScoreboard(Team team, String color, ChatColor chatColor) {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         Scoreboard redBoard = manager.getNewScoreboard();
-        Objective obj = redBoard.registerNewObjective("Map: ", "testMap",
+        Objective obj = redBoard.registerNewObjective("Map: ", Criteria.DUMMY,
                 ChatColor.translateAlternateColorCodes('&', "&a&l<< &2 CAPTURE THE FLAG &a&l>>"));
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
 

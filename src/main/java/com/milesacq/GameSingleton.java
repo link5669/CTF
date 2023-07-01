@@ -32,6 +32,11 @@ public final class GameSingleton {
 
     private static String configString;
 
+    public static void removeBossBars() {
+        blueTeam.removeBar();
+        redTeam.removeBar();
+    }
+
     public static void setConfigString(String in) {
         configString = in;
     }

@@ -1,13 +1,8 @@
 package com.milesacq;
 
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.*;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.defaults.HelpCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,16 +13,13 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import com.milesacq.CoordinateType;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Scanner;
 
-public class CTF extends JavaPlugin implements Listener, CommandExecutor {
-
+public class CTF extends JavaPlugin implements Listener {
+    private String BLUE_WOOL_NAMESPACED = "CraftBlockData{minecraft:blue_wool}";
+    private String RED_WOOL_NAMESPACED = "CraftBlockData{minecraft:red_wool}";
     private String WORLDNAME = "world";
 
     @Override
@@ -73,56 +65,20 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     }
 
     void startGame() {
-        Location blueFlagStart = new Location(this.getServer().getWorld(WORLDNAME),
-                GameSingleton.getCoords(CoordinateType.BLUESTARTCOORDS, 0),
-                GameSingleton.getCoords(CoordinateType.BLUESTARTCOORDS, 1),
-                GameSingleton.getCoords(CoordinateType.BLUESTARTCOORDS, 2));
-        Location redFlagStart = new Location(this.getServer().getWorld(WORLDNAME),
-                GameSingleton.getCoords(CoordinateType.REDSTARTCOORDS, 0),
-                GameSingleton.getCoords(CoordinateType.REDSTARTCOORDS, 1),
-                GameSingleton.getCoords(CoordinateType.REDSTARTCOORDS, 2));
-        Location redFlagGoal = new Location(this.getServer().getWorld(WORLDNAME),
-                GameSingleton.getCoords(CoordinateType.REDGOALCOORDS, 0),
-                GameSingleton.getCoords(CoordinateType.REDGOALCOORDS, 1),
-                GameSingleton.getCoords(CoordinateType.REDGOALCOORDS, 2));
-        Location blueFlagGoal = new Location(this.getServer().getWorld(WORLDNAME),
-                GameSingleton.getCoords(CoordinateType.BLUEGOALCOORDS, 0),
-                GameSingleton.getCoords(CoordinateType.BLUEGOALCOORDS, 1),
-                GameSingleton.getCoords(CoordinateType.BLUEGOALCOORDS, 2));
+        World world = this.getServer().getWorld(WORLDNAME);
+        Location blueFlagStart = createLocation(world, CoordinateType.BLUESTARTCOORDS);
+        Location redFlagStart = createLocation(world, CoordinateType.REDSTARTCOORDS);
+        Location redFlagGoal = createLocation(world, CoordinateType.REDGOALCOORDS);
+        Location blueFlagGoal = createLocation(world, CoordinateType.BLUEGOALCOORDS);
         GameSingleton.setCoords(redFlagStart, blueFlagStart, redFlagGoal, blueFlagGoal);
-        IndividualScoreboard board = new IndividualScoreboard(GameSingleton.getBlueTeam(), GameSingleton.getRedTeam());
+        new IndividualScoreboard(GameSingleton.getBlueTeam(), GameSingleton.getRedTeam());
     }
 
-    private void teamCommand(CommandSender sender, String[] args, Team team) {
-        if (args[1].equalsIgnoreCase("add")) {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.toString().equals("CraftPlayer{name=" + args[2] + "}")) {
-                    if (GameSingleton.getRedTeam() != null) {
-                        if (GameSingleton.getRedTeam().search(player)) {
-                            sender.sendMessage("Player already on Red Team");
-                            return;
-                        }
-                    }
-                    if (GameSingleton.getBlueTeam() != null) {
-                        if (GameSingleton.getBlueTeam().search(player)) {
-                            sender.sendMessage("Player already on Blue Team");
-                            return;
-                        }
-                    }
-                    if (team.addPlayer(player)) {
-                        sender.sendMessage("Successfuly added!");
-                        return;
-                    } else {
-                        sender.sendMessage("Couldn't add! Team already full");
-                        return;
-                    }
-                }
-            }
-            sender.sendMessage("Player not in game!");
-        } else if (args[1].equalsIgnoreCase("list")) {
-            getLogger().info(team.toString());
-        }
+    private Location createLocation(World world, CoordinateType coordinateType) {
+        return new Location(world, GameSingleton.getCoords(coordinateType, 0), 
+            GameSingleton.getCoords(coordinateType, 1),GameSingleton.getCoords(coordinateType, 2));
     }
+
 
     private void setup(CoordinateType coordType, Location placedBlockLocation) {
         GameSingleton.setCoords(coordType, 0, placedBlockLocation.getX() + .5);
@@ -137,86 +93,92 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
             System.out.println("neither");
             return;
         }
+
         String placedBlock = event.getBlock().getBlockData().toString();
         Location placedBlockLocation = event.getBlock().getLocation();
-        if (GameSingleton.getSetupStep() != 6) {
-            switch (GameSingleton.getSetupStep()) {
+        int setupStep = GameSingleton.getSetupStep();
+
+        if (setupStep != 6) {
+            switch (setupStep) {
                 case 0:
-                    setup(CoordinateType.BLUESTARTCOORDS, placedBlockLocation);
-                    event.getPlayer().sendMessage("Place block at red flag start");
-                    return;
+                    setupAndSendMessage(event, CoordinateType.BLUESTARTCOORDS, placedBlockLocation,
+                            "Place block at red flag start");
+                    break;
                 case 1:
-                    setup(CoordinateType.REDSTARTCOORDS, placedBlockLocation);
-                    event.getPlayer().sendMessage("Place block at blue flag goal (opposite color!)");
-                    return;
+                    setupAndSendMessage(event, CoordinateType.REDSTARTCOORDS, placedBlockLocation,
+                            "Place block at blue flag goal (opposite color!)");
+                    break;
                 case 2:
-                    setup(CoordinateType.BLUEGOALCOORDS, placedBlockLocation);
-                    event.getPlayer().sendMessage("Place block at red flag goal (opposite color!)");
-                    return;
+                    setupAndSendMessage(event, CoordinateType.BLUEGOALCOORDS, placedBlockLocation,
+                            "Place block at red flag goal (opposite color!)");
+                    break;
                 case 3:
-                    setup(CoordinateType.REDGOALCOORDS, placedBlockLocation);
-                    event.getPlayer().sendMessage("Place block at red team spawn");
-                    return;
+                    setupAndSendMessage(event, CoordinateType.REDGOALCOORDS, placedBlockLocation,
+                            "Place block at red team spawn");
+                    break;
                 case 4:
-                    setup(CoordinateType.REDRESPAWNLOCATION, placedBlockLocation);
-                    event.getPlayer().sendMessage("Place block at blue team spawn");
-                    return;
+                    setupAndSendMessage(event, CoordinateType.REDRESPAWNLOCATION, placedBlockLocation,
+                            "Place block at blue team spawn");
+                    break;
                 case 5:
-                    setup(CoordinateType.BLUERESPAWNLOCATION, placedBlockLocation);
-                    event.getPlayer().sendMessage("Setup complete!");
-                    try {
-                        FileWriter myWriter = new FileWriter(GameSingleton.getConfigString() + ".txt");
-                        myWriter.write(GameSingleton.getCoords(CoordinateType.BLUESTARTCOORDS, 0) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.BLUESTARTCOORDS, 1) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.BLUESTARTCOORDS, 2) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDSTARTCOORDS, 0) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDSTARTCOORDS, 1) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDSTARTCOORDS, 2) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.BLUEGOALCOORDS, 0) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.BLUEGOALCOORDS, 1) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.BLUEGOALCOORDS, 2) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDGOALCOORDS, 0) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDGOALCOORDS, 1) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDGOALCOORDS, 2) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDRESPAWNLOCATION, 0) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDRESPAWNLOCATION, 1) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.REDRESPAWNLOCATION, 2)
-                                + "\n" + GameSingleton.getCoords(CoordinateType.BLUERESPAWNLOCATION, 0) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.BLUERESPAWNLOCATION, 1) + "\n"
-                                + GameSingleton.getCoords(CoordinateType.BLUERESPAWNLOCATION, 2) + "\n");
-                        myWriter.close();
-                        event.getPlayer().sendMessage("Created " + GameSingleton.getConfigString() + ".txt!");
-                    } catch (IOException e) {
-                        System.out.println("An error occurred.");
-                        e.printStackTrace();
-                    }
-                    return;
+                    setupAndWriteConfig(event, placedBlockLocation);
+                    break;
             }
         }
-        System.out.println("1");
-        if (!(placedBlock.equals("CraftBlockData{minecraft:blue_wool}") || placedBlock.equals("CraftBlockData{minecraft:red_wool}"))) {
+
+        if (!(placedBlock.equals(BLUE_WOOL_NAMESPACED) || placedBlock.equals(RED_WOOL_NAMESPACED))) {
             event.setCancelled(false);
             return;
         }
-        System.out.println("2");
-        if (placedBlock.equals("CraftBlockData{minecraft:blue_wool}") && blockEquals(GameSingleton.getBlueGoalLocation(), placedBlockLocation)) {
+
+        if (placedBlock.equals(BLUE_WOOL_NAMESPACED) && blockEquals(GameSingleton.getBlueGoalLocation(), placedBlockLocation)) {
             event.setCancelled(false);
         } else {
-            event.setCancelled(!placedBlock.equals("CraftBlockData{minecraft:red_wool}") || !blockEquals(GameSingleton.getRedGoalLocation(), placedBlockLocation));
+            event.setCancelled(!(placedBlock.equals(RED_WOOL_NAMESPACED) && blockEquals(GameSingleton.getRedGoalLocation(), placedBlockLocation)));
         }
-        System.out.println("3");
-        if (GameSingleton.checkRedGoal(event.getBlock()) && placedBlock.equals("CraftBlockData{minecraft:red_wool}")) {
-            for (int i = 0; i < 36; i++) {
-                event.getPlayer().getInventory().setItem(i, GameSingleton.getInvItem(TeamType.RED, i));
-            }
-            checkPoint(event, GameSingleton.getRedTeam());
-        } else if (GameSingleton.checkBlueGoal(event.getBlock()) && placedBlock.equals("CraftBlockData{minecraft:blue_wool}")) {
-            System.out.println("4");
-            for (int i = 0; i < 36; i++) {
-                event.getPlayer().getInventory().setItem(i, GameSingleton.getInvItem(TeamType.BLUE, i));
-            }
-            checkPoint(event, GameSingleton.getBlueTeam());
+
+        if (GameSingleton.checkRedGoal(event.getBlock()) && placedBlock.equals(RED_WOOL_NAMESPACED)) {
+            updateInventoryAndCheckPoint(event, GameSingleton.getRedTeam(), TeamType.RED);
+        } else if (GameSingleton.checkBlueGoal(event.getBlock()) && placedBlock.equals(BLUE_WOOL_NAMESPACED)) {
+            updateInventoryAndCheckPoint(event, GameSingleton.getBlueTeam(), TeamType.BLUE);
         }
+    }
+
+    private void setupAndSendMessage(BlockPlaceEvent event, CoordinateType coordinateType, Location placedBlockLocation, String message) {
+        setup(coordinateType, placedBlockLocation);
+        event.getPlayer().sendMessage(message);
+    }
+
+    private void setupAndWriteConfig(BlockPlaceEvent event, Location placedBlockLocation) {
+        setup(CoordinateType.BLUERESPAWNLOCATION, placedBlockLocation);
+        event.getPlayer().sendMessage("Setup complete!");
+
+        try (FileWriter myWriter = new FileWriter(GameSingleton.getConfigString() + ".txt")) {
+            StringBuilder configData = new StringBuilder();
+            CoordinateType[] coordinateTypes = {
+                CoordinateType.BLUESTARTCOORDS, CoordinateType.REDSTARTCOORDS,
+                CoordinateType.BLUEGOALCOORDS, CoordinateType.REDGOALCOORDS,
+                CoordinateType.REDRESPAWNLOCATION, CoordinateType.BLUERESPAWNLOCATION
+            };
+
+            for (CoordinateType coordinateType : coordinateTypes) {
+                for (int i = 0; i < 3; i++) {
+                    configData.append(GameSingleton.getCoords(coordinateType, i)).append("\n");
+                }
+            }
+            myWriter.write(configData.toString());
+            event.getPlayer().sendMessage("Created " + GameSingleton.getConfigString() + ".txt!");
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+    }
+
+    private void updateInventoryAndCheckPoint(BlockPlaceEvent event, Team team, TeamType teamType) {
+        for (int i = 0; i < 36; i++) {
+            event.getPlayer().getInventory().setItem(i, GameSingleton.getInvItem(teamType, i));
+        }
+        checkPoint(event, team);
     }
 
     private void checkPoint(BlockPlaceEvent event, Team team) {
@@ -249,15 +211,14 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
     private void winGame(Team team) {
         if (team.equals(GameSingleton.getRedTeam())) {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                player.sendTitle(ChatColor.RED + "Red team wins!", "yes they did");
+                player.sendTitle(ChatColor.RED + "Red team wins!", "but everyone's a winner in my heart <3",10,70,20);
             }
         } else {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                player.sendTitle(ChatColor.BLUE + "Blue team wins!", "yes they did");
+                player.sendTitle(ChatColor.BLUE + "Blue team wins!", "but everyone's a winner in my heart <3",10,70,20);
             }
         }
-        GameSingleton.getRedTeam().removeBar();
-        GameSingleton.getBlueTeam().removeBar();
+        GameSingleton.removeBossBars();
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
         }
@@ -273,35 +234,30 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
             return;
         }
         if (GameSingleton.checkRedFlag(event.getBlock())) {
-            if (checkTeam(event.getPlayer()) == 2) {
+            if (checkTeam(event.getPlayer()) == TeamType.RED) {
                 event.getPlayer().sendMessage("That's your flag!");
                 event.setCancelled(true);
             } else {
                 event.setCancelled(false);
                 event.setDropItems(false);
-                pickedUpFlag(event.getPlayer(), false);
+                pickedUpFlag(event.getPlayer(), TeamType.RED);
             }
         } else if (GameSingleton.checkBlueFlag(event.getBlock())) {
-            if (checkTeam(event.getPlayer()) == 1) {
+            if (checkTeam(event.getPlayer()) == TeamType.BLUE) {
                 event.getPlayer().sendMessage("That's your flag!");
                 event.setCancelled(true);
             } else {
                 event.setCancelled(false);
                 event.setDropItems(false);
-                pickedUpFlag(event.getPlayer(), true);
+                pickedUpFlag(event.getPlayer(), TeamType.BLUE);
             }
         }
     }
 
-    // true is blue, false is red
-    private void pickedUpFlag(Player player, boolean color) {
+    private void pickedUpFlag(Player player, TeamType color) {
         ItemStack wool;
-        if (color) {
-            wool = new ItemStack(Material.BLUE_WOOL);
-        } else {
-            wool = new ItemStack(Material.RED_WOOL);
-        }
-        if (color) {
+        wool = (color == TeamType.BLUE) ? new ItemStack(Material.BLUE_WOOL) : new ItemStack(Material.RED_WOOL);
+        if (color == TeamType.BLUE) {
             GameSingleton.clearInv(TeamType.BLUE);
             for (int i = 0; i < 36; i++) {
                 GameSingleton.setInv(TeamType.BLUE, player.getInventory().getItem(i), i);
@@ -320,19 +276,18 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
         }
     }
 
-    // retyrns 1 if on blue team, 2 if on red team, 0 if on no team
-    private int checkTeam(Player player) {
+    private TeamType checkTeam(Player player) {
         if (GameSingleton.getBlueTeam() != null) {
             if (GameSingleton.getBlueTeam().search(player)) {
-                return 1;
+                return TeamType.BLUE;
             }
         }
         if (GameSingleton.getRedTeam() != null) {
             if (GameSingleton.getRedTeam().search(player)) {
-                return 2;
+                return TeamType.RED;
             }
         }
-        return 0;
+        return TeamType.NONE;
     }
 
     @EventHandler
@@ -340,23 +295,21 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
         if (GameSingleton.getBlueTeam() == null || GameSingleton.getRedTeam() == null) {
             return;
         }
-        int team = checkTeam(event.getEntity());
-        if (team == 1) {
+        TeamType team = checkTeam(event.getEntity());
+        if (team == TeamType.BLUE) {
             if (GameSingleton.checkRedStartEmpty()) {
                 event.getDrops().clear();
                 GameSingleton.getRedStartLocation().getBlock().setType(Material.RED_WOOL);
             }
             GameSingleton.getBlueTeam().addDeath();
-            IndividualScoreboard board = new IndividualScoreboard(GameSingleton.getBlueTeam(),
-                    GameSingleton.getRedTeam());
-        } else if (team == 2) {
+            new IndividualScoreboard(GameSingleton.getBlueTeam(), GameSingleton.getRedTeam());
+        } else if (team == TeamType.RED) {
             if (GameSingleton.checkBlueStartEmpty()) {
                 event.getDrops().clear();
                 GameSingleton.getBlueStartLocation().getBlock().setType(Material.BLUE_WOOL);
             }
             GameSingleton.getRedTeam().addDeath();
-            IndividualScoreboard board = new IndividualScoreboard(GameSingleton.getBlueTeam(),
-                    GameSingleton.getRedTeam());
+            new IndividualScoreboard(GameSingleton.getBlueTeam(), GameSingleton.getRedTeam());
         }
         if (GameSingleton.getBlueTeam().getDeaths() == 100) {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -376,7 +329,7 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
             GameSingleton.getRedTeam().zeroDeaths();
         }
     }
-
+    
     @EventHandler
     public void onPlayerRespawnEvent(PlayerRespawnEvent event) {
         if (GameSingleton.getBlueTeam() == null || GameSingleton.getRedTeam() == null) {
@@ -402,21 +355,14 @@ public class CTF extends JavaPlugin implements Listener, CommandExecutor {
         if (GameSingleton.getBlueTeam() == null || GameSingleton.getRedTeam() == null) {
             return;
         }
-        if (GameSingleton.getBlueTeam().search(event.getPlayer())
-                || GameSingleton.getRedTeam().search(event.getPlayer())) {
+        if (GameSingleton.getBlueTeam().search(event.getPlayer()) || GameSingleton.getRedTeam().search(event.getPlayer())) {
             GameSingleton.getBlueTeam().showBar(event.getPlayer());
             GameSingleton.getRedTeam().showBar(event.getPlayer());
-            IndividualScoreboard board = new IndividualScoreboard(GameSingleton.getBlueTeam(),
-                    GameSingleton.getRedTeam());
+            new IndividualScoreboard(GameSingleton.getBlueTeam(), GameSingleton.getRedTeam());
         }
     }
 
     private boolean blockEquals(Location one, Location two) {
-        if (one.getX() == two.getX()) {
-            if (one.getY() == two.getY()) {
-                return one.getZ() == two.getZ();
-            }
-        }
-        return false;
+        return (one.getX() == two.getX() && one.getY() == two.getY() && one.getZ() == two.getZ());
     }
 }
