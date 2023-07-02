@@ -38,7 +38,7 @@ public final class GameSingleton {
         return null;
     }
 
-    public static Team findPlayerTeam(Player player) {
+    public static Team findPlayerTeam(String player) {
         for (Team team : teams) {
             if (team.search(player)) {
                 return team;
@@ -49,7 +49,7 @@ public final class GameSingleton {
 
     public static boolean isOnTeam(Player player) {
         for (Team team : teams) {
-            if (team.search(player)) {
+            if (team.search(player.getName())) {
                 return true;
             }
         }

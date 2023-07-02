@@ -31,7 +31,7 @@ public class IndividualScoreboard {
         Score score4 = obj.getScore(ChatColor.BLUE + "=-=-=-=-=-=-=-=-=");
         score4.setScore(0);
         for (Player online : Bukkit.getOnlinePlayers()) {
-            if (team.search(online)) {
+            if (team.search(online.getName())) {
                 online.setScoreboard(redBoard);
             }
         }

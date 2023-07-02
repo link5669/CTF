@@ -41,14 +41,15 @@ public class CTF extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         new GameSingleton();
         GameSingleton.setWorld(this.getServer().getWorld(WORLDNAME));
-        File configDir = new File("./world_backup");
-        if (!configDir.exists()){
-            configDir.mkdirs();
-        }
-        try {
-            FileUtils.copyDirectory(new File("./world"), configDir, true);
-        } catch (IOException e) {
-            e.printStackTrace();
+        File worldLoadDir = new File("./world");
+        if (!worldLoadDir.exists()){
+            worldLoadDir.mkdirs();
+             try {
+                FileUtils.copyDirectory(new File("./maps/manors"), worldLoadDir, true);
+                Bukkit.shutdown();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -67,22 +68,42 @@ public class CTF extends JavaPlugin implements Listener {
             if (commandName.equals("start")) {
                 startGame();
             } else if (commandName.equals("blueteam")) {
+                sender.sendMessage("Make red team next!");
                 new BlueTeamCommand().execute(sender, args);
             } else if (commandName.equals("redteam")) {
+                sender.sendMessage("Add players! And run setup!");
                 new RedTeamCommand().execute(sender, args);
             } else if (commandName.equals("setup")) {
                 new SetupCommand().execute(sender, args);
-            } else if (args[0].equalsIgnoreCase("give")) {
+            } else if (commandName.equals("give")) {
                 new GiveCommand().execute(sender, args);
-            } else if (args[0].equalsIgnoreCase("help")) {
+            } else if (commandName.equals("help")) {
                 new CTFHelpCommand().execute(sender, args);
-            } else if (args[0].equalsIgnoreCase("chat")) {
+            } else if (commandName.equals("chat")) {
                 StringBuilder result = new StringBuilder();
                 for (int i = 1; i < args.length; i++) {
                     result.append(args[i]).append(" ");
                 }
                 String concatenatedString = result.toString().trim();
-                GameSingleton.getTeam(sender.getName()).sendMessage(concatenatedString);
+                GameSingleton.findPlayerTeam(sender.getName()).sendMessage(concatenatedString);
+            } else if (commandName.equals("load")) {
+                File folder = new File("./maps");
+                File[] listOfFiles = folder.listFiles();
+                for (File file : listOfFiles) {
+                    System.out.println(file.getName());
+                    if (file.getName().equals(args[1])) {
+                        System.out.println("1");
+                        File mapToLoad = new File("./maps/" + args[1]);
+                        File worldLoadDir = new File("./world");
+                        try {
+                            FileUtils.copyDirectory(mapToLoad, worldLoadDir, true);
+                            Bukkit.shutdown();
+                            return true;
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
             }
         }
         return true;
@@ -209,7 +230,7 @@ public class CTF extends JavaPlugin implements Listener {
     }
 
     private void checkPoint(BlockPlaceEvent event) {
-        Team team = GameSingleton.findPlayerTeam(event.getPlayer());
+        Team team = GameSingleton.findPlayerTeam(event.getPlayer().getName());
         if (team.getOpponentTeam().getStartBlock().equals(team.getWoolMaterial())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("The other team has your flag!");
@@ -236,14 +257,14 @@ public class CTF extends JavaPlugin implements Listener {
         GameSingleton.clearTeams();
         try {
             FileUtils.deleteDirectory(new File("./world"));
+            File dir = new File("./world_default");
+            if (!dir.isDirectory()) {
+                System.err.println("There is no directory @ given path");
+            } else {
+                FileUtils.copyDirectory(new File("./world_default"), new File("./world"), true);
+            }
         } catch (IOException e) {
             e.printStackTrace();
-        }
-        File dir = new File("./world_backup");
-        if (!dir.isDirectory()) {
-            System.err.println("There is no directory @ given path");
-        } else {
-            dir.renameTo(new File("./world"));
         }
         PrintWriter writer;
         try {
@@ -256,7 +277,7 @@ public class CTF extends JavaPlugin implements Listener {
             e.printStackTrace();
         }
         try {
-            Thread.sleep(4000);
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -271,7 +292,7 @@ public class CTF extends JavaPlugin implements Listener {
         if (GameSingleton.getSetupStep() < 6) {
             return;
         }
-        Team team = GameSingleton.findPlayerTeam(event.getPlayer());
+        Team team = GameSingleton.findPlayerTeam(event.getPlayer().getName());
         if (team.checkFlag(event.getBlock())) {
             event.getPlayer().sendMessage("That's your flag!");
             event.setCancelled(true);
@@ -283,7 +304,7 @@ public class CTF extends JavaPlugin implements Listener {
     }
 
     private void pickedUpFlag(Player player) {
-        Team team = GameSingleton.findPlayerTeam(player);
+        Team team = GameSingleton.findPlayerTeam(player.getName());
         team.clearInventory();
         for (int i = 0; i < 36; i++) {
             team.setInventory(player.getInventory().getItem(i), i);
@@ -298,7 +319,7 @@ public class CTF extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Team team = GameSingleton.findPlayerTeam(event.getEntity());
+        Team team = GameSingleton.findPlayerTeam(event.getEntity().getName());
         if (team == null) {
             return;
         }
@@ -321,7 +342,8 @@ public class CTF extends JavaPlugin implements Listener {
     
     @EventHandler
     public void onPlayerRespawnEvent(PlayerRespawnEvent event) {
-        Team team = GameSingleton.findPlayerTeam(event.getPlayer());
+        Team team = GameSingleton.findPlayerTeam(event.getPlayer().getName());
+        System.out.println(team.getName());
         Location spawn = new Location(this.getServer().getWorld(WORLDNAME),
                 team.getCoords(CoordinateType.RESPAWNCOORDS, 0),
                 team.getCoords(CoordinateType.RESPAWNCOORDS, 1),

@@ -39,7 +39,7 @@ public abstract class TeamCommand {
     private void handleAdd(String[] args, CommandSender sender) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.toString().equals("CraftPlayer{name=" + args[2] + "}")) {
-                    Team teamSearch = GameSingleton.findPlayerTeam(player);
+                    Team teamSearch = GameSingleton.findPlayerTeam(player.getName());
                 if (teamSearch != null) {
                     sender.sendMessage("Player already on Team " + teamSearch.getName()); 
                 }

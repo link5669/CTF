@@ -176,10 +176,10 @@ public class Team {
         return false;
     }
 
-    public boolean search(Player player) {
+    public boolean search(String player) {
         for (Player member : this.members) {
             if (member != null) {
-                if (member.toString().equals(player.toString())) {
+                if (member.getName().equals(player)) {
                     return true;
                 }
             }
