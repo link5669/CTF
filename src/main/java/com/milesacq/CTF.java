@@ -186,8 +186,8 @@ public class CTF extends JavaPlugin implements Listener {
                 CoordinateType.GOALCOORDS, 
                 CoordinateType.RESPAWNCOORDS, 
             };
-            for (Team team : GameSingleton.getTeams()){
-                for (CoordinateType coordinateType : coordinateTypes) {
+            for (CoordinateType coordinateType : coordinateTypes){
+                for (Team team : GameSingleton.getTeams()) {
                     for (int i = 0; i < 3; i++) {
                         configData.append(team.getCoords(coordinateType, i)).append("\n");
                     }
@@ -255,6 +255,12 @@ public class CTF extends JavaPlugin implements Listener {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+        try {
+            Thread.sleep(4000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        Bukkit.shutdown();
     }
 
     @EventHandler
