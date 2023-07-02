@@ -1,4 +1,4 @@
-package com.milesacq;
+package com.milesacq.enums;
 
 public enum TeamType {
     BLUE,

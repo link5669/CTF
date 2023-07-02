@@ -1,4 +1,4 @@
-package com.milesacq;
+package com.milesacq.commands;
 
 import org.bukkit.command.CommandSender;
 

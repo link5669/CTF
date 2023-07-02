@@ -1,8 +1,10 @@
-package com.milesacq;
+package com.milesacq.commands;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import com.milesacq.GameSingleton;
 
 public class GiveCommand extends Command {
     @Override

@@ -1,4 +1,4 @@
-package com.milesacq;
+package com.milesacq.commands;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.util.Scanner;
 
 import org.bukkit.command.CommandSender;
+
+import com.milesacq.GameSingleton;
+import com.milesacq.Team;
+import com.milesacq.enums.CoordinateType;
 
 public class SetupCommand extends Command {
     String configName;
@@ -28,7 +32,11 @@ public class SetupCommand extends Command {
         GameSingleton.setSetupStep(0);
         sender.sendMessage("Place block at blue flag start");
         try {
-            File myObj = new File(configName + ".txt");
+            File configDir = new File("./config/ctf");
+            if (!configDir.exists()){
+                configDir.mkdirs();
+            }
+            File myObj = new File("./config/ctf/" + configName + ".txt");
             if (myObj.createNewFile()) {
                 sender.sendMessage("File created: " + myObj.getName());
             } else {
@@ -42,37 +50,40 @@ public class SetupCommand extends Command {
 
      private void readFromFile(CommandSender sender) {
         try {
-            File myObj = new File(configName + ".txt");
+            File myObj = new File("./config/ctf/" + configName + ".txt");
             Scanner myReader = new Scanner(myObj);
             String data = myReader.nextLine();
             for (int i = 0; i < 3; i++) {
-                GameSingleton.setCoords(CoordinateType.BLUESTARTCOORDS, i, Double.parseDouble(data));
+                GameSingleton.getTeam("Blue").setCoords(CoordinateType.STARTCOORDS, i, Double.parseDouble(data));
                 data = myReader.nextLine();
             }
             for (int i = 0; i < 3; i++) {
-                GameSingleton.setCoords(CoordinateType.REDSTARTCOORDS, i, Double.parseDouble(data));
+                GameSingleton.getTeam("Red").setCoords(CoordinateType.STARTCOORDS, i, Double.parseDouble(data));
                 data = myReader.nextLine();
             }
             for (int i = 0; i < 3; i++) {
-                GameSingleton.setCoords(CoordinateType.BLUEGOALCOORDS, i, Double.parseDouble(data));
+                GameSingleton.getTeam("Blue").setCoords(CoordinateType.GOALCOORDS, i, Double.parseDouble(data));
                 data = myReader.nextLine();
             }
             for (int i = 0; i < 3; i++) {
-                GameSingleton.setCoords(CoordinateType.REDGOALCOORDS, i, Double.parseDouble(data));
+                GameSingleton.getTeam("Red").setCoords(CoordinateType.GOALCOORDS, i, Double.parseDouble(data));
                 data = myReader.nextLine();
             }
             for (int i = 0; i < 3; i++) {
-                GameSingleton.setCoords(CoordinateType.REDRESPAWNLOCATION, i, Double.parseDouble(data));
+                GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, i, Double.parseDouble(data));
                 data = myReader.nextLine();
             }
             for (int i = 0; i < 3; i++) {
-                GameSingleton.setCoords(CoordinateType.BLUERESPAWNLOCATION, i, Double.parseDouble(data));
+                GameSingleton.getTeam("Blue").setCoords(CoordinateType.RESPAWNCOORDS, i, Double.parseDouble(data));
                 if (myReader.hasNextLine()) {
                     data = myReader.nextLine();
                 }
             }
+            for (Team team : GameSingleton.getTeams()) {
+                team.setBlocks();
+            }
+            GameSingleton.setSetupStep(6);
             myReader.close();
-            GameSingleton.setBlocks();
         } catch (FileNotFoundException e) {
             sender.sendMessage("An error occurred.");
             e.printStackTrace();

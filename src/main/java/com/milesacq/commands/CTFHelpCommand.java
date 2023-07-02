@@ -1,9 +1,8 @@
-package com.milesacq;
+package com.milesacq.commands;
 
 import org.bukkit.command.CommandSender;
 
 public class CTFHelpCommand extends Command {
-
     @Override
     public void execute(CommandSender sender, String[] args) {
         sender.sendMessage("Configure a map with /ctf setup filename");
@@ -12,6 +11,5 @@ public class CTFHelpCommand extends Command {
         sender.sendMessage("Add players to a team with /ctf blueteam add link5669");
         sender.sendMessage("See all the players on a team with /ctf blueteam list");
         sender.sendMessage("Start the game with /ctf start");
-    }
-    
+    }   
 }
