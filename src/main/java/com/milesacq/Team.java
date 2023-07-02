@@ -4,7 +4,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -36,9 +35,9 @@ public class Team {
         this.woolMaterial = woolMaterial;
         this.chatColor = chatColor;
         this.bossBar = Bukkit.createBossBar(
-                chatColor + name + " Score" ,
-                barColor,
-                BarStyle.SOLID);
+            chatColor + name + " Score" ,
+            barColor,
+            BarStyle.SOLID);
         this.bossBar.setProgress(0);
         for (Player p:Bukkit.getOnlinePlayers()){
             bossBar.addPlayer(p);
@@ -66,7 +65,7 @@ public class Team {
             player.sendMessage(message);
         }
     }
-    
+
     public Team getOpponentTeam() {
         return opponentTeam;
     }
@@ -141,21 +140,11 @@ public class Team {
         return -1000;
     }
 
-    public double[] getCoords(CoordinateType coordType) {
-        switch (coordType) {
-            case STARTCOORDS: return startCoords;
-            case GOALCOORDS: return goalCoords;
-            case RESPAWNCOORDS: return respawnCoords;
-        }
-        return null;
-    }
-
     public ItemStack[] getInventory() {
         return inv;
     }
 
     public void clearInventory() {
-        System.out.println("aosjd");
         inv = new ItemStack[36];
     }
 
@@ -187,10 +176,6 @@ public class Team {
         return false;
     }
 
-    public int getLength() {
-        return this.members.length;
-    }
-
     public boolean search(Player player) {
         for (Player member : this.members) {
             if (member != null) {
@@ -201,6 +186,7 @@ public class Team {
         }
         return false;
     }
+
     public boolean addPlayer(Player player) {
         if (this.members[0] == null) {
             this.members[0] = player;

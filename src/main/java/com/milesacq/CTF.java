@@ -21,8 +21,14 @@ import com.milesacq.commands.RedTeamCommand;
 import com.milesacq.commands.SetupCommand;
 import com.milesacq.enums.CoordinateType;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+
+import org.apache.commons.io.FileUtils;
 
 public class CTF extends JavaPlugin implements Listener {
     private String BLUE_WOOL_NAMESPACED = "CraftBlockData{minecraft:blue_wool}";
@@ -35,6 +41,15 @@ public class CTF extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         new GameSingleton();
         GameSingleton.setWorld(this.getServer().getWorld(WORLDNAME));
+        File configDir = new File("./world_backup");
+        if (!configDir.exists()){
+            configDir.mkdirs();
+        }
+        try {
+            FileUtils.copyDirectory(new File("./world"), configDir, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -78,10 +93,11 @@ public class CTF extends JavaPlugin implements Listener {
         Team red = GameSingleton.getTeam("Red");
         blue.setOpponentTeam(red);
         red.setOpponentTeam(blue);
-        blue.setGoalBlock(new Location(this.getServer().getWorld(WORLDNAME), blue.getCoords(CoordinateType.GOALCOORDS,0), blue.getCoords(CoordinateType.GOALCOORDS,1),blue.getCoords(CoordinateType.GOALCOORDS,2)).getBlock());
-        blue.setStartBlock(new Location(this.getServer().getWorld(WORLDNAME), blue.getCoords(CoordinateType.STARTCOORDS,0), blue.getCoords(CoordinateType.STARTCOORDS,1),blue.getCoords(CoordinateType.STARTCOORDS,2)).getBlock());
-        red.setGoalBlock(new Location(this.getServer().getWorld(WORLDNAME), red.getCoords(CoordinateType.GOALCOORDS,0), red.getCoords(CoordinateType.GOALCOORDS,1),red.getCoords(CoordinateType.GOALCOORDS,2)).getBlock());
-        red.setStartBlock(new Location(this.getServer().getWorld(WORLDNAME), red.getCoords(CoordinateType.STARTCOORDS,0), red.getCoords(CoordinateType.STARTCOORDS,1),red.getCoords(CoordinateType.STARTCOORDS,2)).getBlock());
+        World world = this.getServer().getWorld(WORLDNAME);
+        for (Team team : GameSingleton.getTeams()) {
+            team.setGoalBlock(new Location(world, team.getCoords(CoordinateType.GOALCOORDS,0), team.getCoords(CoordinateType.GOALCOORDS,1),team.getCoords(CoordinateType.GOALCOORDS,2)).getBlock());
+            team.setStartBlock(new Location(world, team.getCoords(CoordinateType.STARTCOORDS,0), team.getCoords(CoordinateType.STARTCOORDS,1),team.getCoords(CoordinateType.STARTCOORDS,2)).getBlock());
+        }
         new IndividualScoreboard(GameSingleton.getTeams());
         for (Team teamTemp : GameSingleton.getTeams()) {
             teamTemp.setBlocks();
@@ -152,15 +168,11 @@ public class CTF extends JavaPlugin implements Listener {
         if (placedBlock.equals(BLUE_WOOL_NAMESPACED) && blockEquals(GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), placedBlockLocation)) {
             event.setCancelled(false);
         } else {
-            System.out.println(GameSingleton.getTeam("Red").getGoalBlock().getLocation());
             event.setCancelled(!(placedBlock.equals(RED_WOOL_NAMESPACED) && blockEquals(GameSingleton.getTeam("Red").getGoalBlock().getLocation(), placedBlockLocation)));
         }
-        System.err.println("1");
         if (blockEquals(GameSingleton.getTeam("Red").getGoalBlock().getLocation(), event.getBlock().getLocation()) && placedBlock.equals(RED_WOOL_NAMESPACED)) {
-            System.err.println("2");
             updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Blue"));
         } else if (blockEquals(GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), event.getBlock().getLocation()) && placedBlock.equals(BLUE_WOOL_NAMESPACED)) {        
-            System.err.println("3");
             updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Red"));
         }
     }
@@ -222,6 +234,27 @@ public class CTF extends JavaPlugin implements Listener {
             player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
         }
         GameSingleton.clearTeams();
+        try {
+            FileUtils.deleteDirectory(new File("./world"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        File dir = new File("./world_backup");
+        if (!dir.isDirectory()) {
+            System.err.println("There is no directory @ given path");
+        } else {
+            dir.renameTo(new File("./world"));
+        }
+        PrintWriter writer;
+        try {
+            writer = new PrintWriter("eula.txt", "UTF-8");
+            writer.println("eula=true");
+            writer.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
     }
 
     @EventHandler

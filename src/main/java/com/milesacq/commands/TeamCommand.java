@@ -29,27 +29,30 @@ public abstract class TeamCommand {
 
     private void teamCommand(CommandSender sender, String[] args) {
         if (args[1].equalsIgnoreCase("add")) {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.toString().equals("CraftPlayer{name=" + args[2] + "}")) {
-                    for (Team team : GameSingleton.getTeams()) {
-                        if (team.search(player)) {
-                            sender.sendMessage("Player already on Team " + team.getName());
-                        }
-                    }
-                    Team team = args[0].equals("redteam") ? GameSingleton.getTeam("Red") : GameSingleton.getTeam("Blue");
-                    if (team.addPlayer(player)) {
-                        sender.sendMessage("Successfuly added!");
-                        return;
-                    } else {
-                        sender.sendMessage("Couldn't add! Team already full");
-                        return;
-                    }
-                }
-            }
-            sender.sendMessage("Player not in game!");
+            handleAdd(args, sender);
         } else if (args[1].equalsIgnoreCase("list")) {
             Team team = args[0] == "redteam" ? GameSingleton.getTeam("Red") : GameSingleton.getTeam("Blue");
-            System.out.println(team.toString());
+            sender.sendMessage(team.toString());
         }
+    }
+
+    private void handleAdd(String[] args, CommandSender sender) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.toString().equals("CraftPlayer{name=" + args[2] + "}")) {
+                    Team teamSearch = GameSingleton.findPlayerTeam(player);
+                if (teamSearch != null) {
+                    sender.sendMessage("Player already on Team " + teamSearch.getName()); 
+                }
+                Team team = args[0].equals("redteam") ? GameSingleton.getTeam("Red") : GameSingleton.getTeam("Blue");
+                if (team.addPlayer(player)) {
+                    sender.sendMessage("Successfuly added!");
+                    return;
+                } else {
+                    sender.sendMessage("Couldn't add! Team already full");
+                    return;
+                }
+            }
+        }
+        sender.sendMessage("Player not in game!");
     }
 }
