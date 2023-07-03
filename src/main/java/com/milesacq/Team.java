@@ -2,6 +2,7 @@ package com.milesacq;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -200,6 +201,31 @@ public class Team {
             }
         }
         return false;
+    }
+
+    public void warpToSpawn() {
+        for (Player player : members) {
+            if (player != null) {
+                player.teleport(new Location(GameSingleton.getWorld(), getCoords(CoordinateType.RESPAWNCOORDS, 0), getCoords(CoordinateType.RESPAWNCOORDS, 1), getCoords(CoordinateType.RESPAWNCOORDS, 2)));
+            }
+        }
+    }
+
+    public void setFullHealthAndHunger() {
+        for (Player player : members) {
+            if (player != null) {
+                player.setHealth(20);
+                player.setFoodLevel(20);
+            }
+        }
+    }
+
+    public void setSurvival() {
+        for (Player player : members) {
+            if (player != null) {
+                player.setGameMode(GameMode.SURVIVAL);
+            }
+        }
     }
 
     public String toString() {

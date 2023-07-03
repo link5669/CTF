@@ -21,6 +21,26 @@ public abstract class TeamCommand {
                 sender.sendMessage("please specify number of players");
             } else {
                 GameSingleton.addTeam(new Team(Integer.parseInt(args[2]), color, name, chatColor, barColor, woolMaterial));
+                if (args.length > 3) {
+                    if (args.length - 3 > Integer.parseInt(args[2])) {
+                        sender.sendMessage("Too many arguments!");
+                        return;
+                    }
+                    for (int i = 3; i < args.length; i++) {
+                        Team team = args[0].equals("redteam") ? GameSingleton.getTeam("Red") : GameSingleton.getTeam("Blue");
+                         for (Player player : Bukkit.getOnlinePlayers()) {
+                            if (player.toString().equals("CraftPlayer{name=" + args[i] + "}")) {
+                                if (team.addPlayer(player)) {
+                                    sender.sendMessage("Successfuly added " + args[2] + "players!");
+                                    return;
+                                } else {
+                                    sender.sendMessage("Couldn't add! Team already full");
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         } else {
             teamCommand(sender, args);

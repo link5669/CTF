@@ -70,11 +70,11 @@ public class SetupCommand extends Command {
                 data = myReader.nextLine();
             }
             for (int i = 0; i < 3; i++) {
-                GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, i, Double.parseDouble(data));
+                GameSingleton.getTeam("Blue").setCoords(CoordinateType.RESPAWNCOORDS, i, Double.parseDouble(data));
                 data = myReader.nextLine();
             }
             for (int i = 0; i < 3; i++) {
-                GameSingleton.getTeam("Blue").setCoords(CoordinateType.RESPAWNCOORDS, i, Double.parseDouble(data));
+                GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, i, Double.parseDouble(data));
                 if (myReader.hasNextLine()) {
                     data = myReader.nextLine();
                 }

@@ -94,8 +94,10 @@ public class CTF extends JavaPlugin implements Listener {
                     if (file.getName().equals(args[1])) {
                         System.out.println("1");
                         File mapToLoad = new File("./maps/" + args[1]);
-                        File worldLoadDir = new File("./world");
                         try {
+                            FileUtils.deleteDirectory(new File("./world"));
+                            File worldLoadDir = new File("./world");
+                            worldLoadDir.mkdirs();
                             FileUtils.copyDirectory(mapToLoad, worldLoadDir, true);
                             Bukkit.shutdown();
                             return true;
@@ -120,8 +122,11 @@ public class CTF extends JavaPlugin implements Listener {
             team.setStartBlock(new Location(world, team.getCoords(CoordinateType.STARTCOORDS,0), team.getCoords(CoordinateType.STARTCOORDS,1),team.getCoords(CoordinateType.STARTCOORDS,2)).getBlock());
         }
         new IndividualScoreboard(GameSingleton.getTeams());
-        for (Team teamTemp : GameSingleton.getTeams()) {
-            teamTemp.setBlocks();
+        for (Team team : GameSingleton.getTeams()) {
+            team.setBlocks();
+            team.warpToSpawn();
+            team.setFullHealthAndHunger();
+            team.setSurvival();
         }
     }
 
@@ -159,19 +164,19 @@ public class CTF extends JavaPlugin implements Listener {
                     GameSingleton.getTeam("Red").setCoords(CoordinateType.GOALCOORDS, 1, placedBlockLocation.getY() + .5);
                     GameSingleton.getTeam("Red").setCoords(CoordinateType.GOALCOORDS, 2, placedBlockLocation.getZ() + .5);
                     GameSingleton.setSetupStep(GameSingleton.getSetupStep() + 1);
-                    event.getPlayer().sendMessage("Place block at red team spawn");
-                    break;
-                case 4:
-                    GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, 0, placedBlockLocation.getX() + .5);
-                    GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, 1, placedBlockLocation.getY() + .5);
-                    GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, 2, placedBlockLocation.getZ() + .5);
-                    GameSingleton.setSetupStep(GameSingleton.getSetupStep() + 1);
                     event.getPlayer().sendMessage("Place block at blue team spawn");
                     break;
-                case 5:
+                case 4:
                     GameSingleton.getTeam("Blue").setCoords(CoordinateType.RESPAWNCOORDS, 0, placedBlockLocation.getX() + .5);
                     GameSingleton.getTeam("Blue").setCoords(CoordinateType.RESPAWNCOORDS, 1, placedBlockLocation.getY() + .5);
                     GameSingleton.getTeam("Blue").setCoords(CoordinateType.RESPAWNCOORDS, 2, placedBlockLocation.getZ() + .5);
+                    GameSingleton.setSetupStep(GameSingleton.getSetupStep() + 1);
+                    event.getPlayer().sendMessage("Place block at red team spawn");
+                    break;
+                case 5:
+                    GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, 0, placedBlockLocation.getX() + .5);
+                    GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, 1, placedBlockLocation.getY() + .5);
+                    GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, 2, placedBlockLocation.getZ() + .5);
                     GameSingleton.setSetupStep(GameSingleton.getSetupStep() + 1);
                     setupAndWriteConfig(event, placedBlockLocation);
                     break;
