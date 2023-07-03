@@ -1,4 +1,4 @@
-##THINGS TO TEST
+## THINGS TO TEST
 
 adding multiple players to one team in one command
 
