@@ -9,3 +9,5 @@ behavior while two people have the flag
 joining new world, spawn point?
 
 ask opinion on joining world
+
+online players in scoreboard when player join/leave during game
