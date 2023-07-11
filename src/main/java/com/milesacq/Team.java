@@ -31,6 +31,7 @@ public class Team {
     private Block goalBlock;
     private Team opponentTeam;
     private Material woolMaterial;
+    private boolean flagStatus;
 
     public Team(int numMembers, TeamType color, String name, ChatColor chatColor, BarColor barColor, Material woolMaterial) {
         this.members = new Player[numMembers];
@@ -45,6 +46,7 @@ public class Team {
         for (Player p:Bukkit.getOnlinePlayers()){
             bossBar.addPlayer(p);
         }
+        this.flagStatus = false;
     }
 
     public Block getStartBlock() {
@@ -108,6 +110,14 @@ public class Team {
                 p.removePotionEffect(PotionEffectType.SPEED);
             }
         }
+    }
+
+    public void setFlagStatus(boolean taken) {
+        flagStatus = taken;
+    }
+
+    public boolean getFlagStatus() {
+        return flagStatus;
     }
 
     public boolean checkStartEmpty() {

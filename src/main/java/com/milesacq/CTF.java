@@ -222,15 +222,22 @@ public class CTF extends JavaPlugin implements Listener {
             }
             return;
         }
-        if (placedBlock.equals(BLUE_WOOL_NAMESPACED) && blockEquals(GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), placedBlockLocation)) {
-            event.setCancelled(false);
-        } else {
-            event.setCancelled(!(placedBlock.equals(RED_WOOL_NAMESPACED) && blockEquals(GameSingleton.getTeam("Red").getGoalBlock().getLocation(), placedBlockLocation)));
-        }
         if (blockEquals(GameSingleton.getTeam("Red").getGoalBlock().getLocation(), event.getBlock().getLocation()) && placedBlock.equals(RED_WOOL_NAMESPACED)) {
-            updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Blue"));
-        } else if (blockEquals(GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), event.getBlock().getLocation()) && placedBlock.equals(BLUE_WOOL_NAMESPACED)) {        
-            updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Red"));
+            if (GameSingleton.getTeam("Blue").getFlagStatus()) {
+                event.setCancelled(false);
+                updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Blue"));
+            } else {
+                event.setCancelled(true);
+            }
+        } else if (blockEquals(GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), event.getBlock().getLocation()) && placedBlock.equals(BLUE_WOOL_NAMESPACED)) {  
+            if (GameSingleton.getTeam("Red").getFlagStatus()) {
+                event.setCancelled(false);
+                updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Red"));
+            } else {
+                event.setCancelled(true);
+            }
+        } else {
+            event.setCancelled(true);
         }
     }
 
@@ -247,14 +254,20 @@ public class CTF extends JavaPlugin implements Listener {
         }   
     }
 
-    private boolean checkNineBlockArea(Location location1, Location location2) {
+    private boolean checkNineBlockArea(Location location1, Location location2, boolean skipCenter) {
         for (int i = -1; i < 2; i++) {
             for (int j = -1; j < 2; j++) {
                 for (int k = -1; k < 2; k++) {
                     if (location1.getX() + i == location2.getX() &&
                         location1.getY() + j == location2.getY() &&
                         location1.getZ() + k == location2.getZ()) {
-                            return true;
+                            if (skipCenter) {
+                                if ( i == 0 && j == 0 && k == 0) {
+                                    continue;
+                                }
+                            } else {
+                                return true;
+                            }
                         }
                 }
             }
@@ -279,7 +292,6 @@ public class CTF extends JavaPlugin implements Listener {
                 }
             }
             for (int i = 0; i < 3; i++) {
-                System.out.println(GameSingleton.getCenterCoords(i));
                 configData.append(GameSingleton.getCenterCoords(i)).append("\n");
             }
             myWriter.write(configData.toString());
@@ -304,6 +316,7 @@ public class CTF extends JavaPlugin implements Listener {
             event.getPlayer().sendMessage("The other team has your flag!");
             return;
         }
+        team.setFlagStatus(false);
         for (Team teamTemp : GameSingleton.getTeams()) {
             teamTemp.setBlocks();
         }
@@ -369,14 +382,15 @@ public class CTF extends JavaPlugin implements Listener {
             event.getPlayer().sendMessage("That's your flag!");
             event.setCancelled(true);
         } else if (team.getOpponentTeam().checkFlag(event.getBlock())) {
+            team.setFlagStatus(true);
             event.setCancelled(false);
             event.setDropItems(false);
             pickedUpFlag(event.getPlayer());
         }
-        if (checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getGoalBlock().getLocation()) || checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getGoalBlock().getLocation())) {
+        if (checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), false) || checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getGoalBlock().getLocation(), false)) {
             event.setCancelled(true);
         }
-        if (checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getStartBlock().getLocation()) || checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getStartBlock().getLocation())) {
+        if (checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getStartBlock().getLocation(), true) || checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getStartBlock().getLocation(), true)) {
             event.setCancelled(true);
         }
     }
