@@ -75,6 +75,10 @@ public class SetupCommand extends Command {
             }
             for (int i = 0; i < 3; i++) {
                 GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, i, Double.parseDouble(data));
+                data = myReader.nextLine();
+           }
+            for (int i = 0; i < 3; i++) {
+                GameSingleton.setCenterCoords(i, Double.parseDouble(data));
                 if (myReader.hasNextLine()) {
                     data = myReader.nextLine();
                 }
@@ -82,7 +86,7 @@ public class SetupCommand extends Command {
             for (Team team : GameSingleton.getTeams()) {
                 team.setBlocks();
             }
-            GameSingleton.setSetupStep(6);
+            GameSingleton.setSetupStep(7);
             myReader.close();
         } catch (FileNotFoundException e) {
             sender.sendMessage("An error occurred.");

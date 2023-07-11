@@ -14,6 +14,7 @@ public final class GameSingleton {
     private static ArrayList<Team> teams = new ArrayList<Team>();
     private static int setupStep = -1;
     private static String configString;
+    private static double[] centerCoords = new double[3];
 
     public static void removeBossBars() {
         for (Team team : teams) {
@@ -21,6 +22,17 @@ public final class GameSingleton {
         }
     }
 
+    public static void setCenterCoords(int i, double coords) {
+        centerCoords[i] = coords;
+    }
+
+    public static void setCenterCoords(double[] coords) {
+        centerCoords = coords;
+    }
+
+    public static double getCenterCoords(int i) {
+        return centerCoords[i];
+    }
     public static void clearTeams() {
         teams = new ArrayList<Team>();
     }

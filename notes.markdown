@@ -1,11 +1,10 @@
-##THINGS TO TEST
+change name colors - done?
+should not be able to score if both flags are stolen
+no pvp in teams
+adding multiple players to team w one command doesnt work - need lennie to fix
+turn off peaceful for spawn eggs
+scoreboard doesnt update player count
 
-adding multiple players to one team in one command
-
-break/place block behavior while one person has the flag
-
-behavior while two people have the flag
-
-joining new world, spawn point?
-
-ask opinion on joining world
+center thing
+make goal platform invincible
+cant place anything on top of it

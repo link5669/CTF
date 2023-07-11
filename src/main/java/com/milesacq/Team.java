@@ -11,6 +11,8 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import com.milesacq.enums.CoordinateType;
 import com.milesacq.enums.TeamType;
@@ -90,6 +92,22 @@ public class Team {
         goalLocation.getBlock().setType(Material.AIR);
         startLocation.getBlock().setType(woolMaterial);
         playerStartLocation.getBlock().setType(Material.AIR);
+    }
+
+    public void giveSpeedBuff() {
+        for (Player p : members) {
+            if (p != null) {
+                p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 900000000, 1));
+            }
+        }
+    }
+
+    public void removeSpeedBuff() {
+        for (Player p : members) {
+            if (p != null) {
+                p.removePotionEffect(PotionEffectType.SPEED);
+            }
+        }
     }
 
     public boolean checkStartEmpty() {
@@ -216,6 +234,24 @@ public class Team {
             if (player != null) {
                 player.setHealth(20);
                 player.setFoodLevel(20);
+            }
+        }
+    }
+
+    public void setNameColor() {
+        if (name.toLowerCase().equals("red")) {
+            for (Player p : members) {
+                if (p != null) {
+                    p.setDisplayName(ChatColor.RED + p.getName());
+                    p.setPlayerListName(ChatColor.RED + p.getName());
+                }
+            }
+        } else {
+            for (Player p : members) {
+                if (p != null) {
+                    p.setDisplayName(ChatColor.BLUE + p.getName());
+                    p.setPlayerListName(ChatColor.BLUE + p.getName());
+                }
             }
         }
     }

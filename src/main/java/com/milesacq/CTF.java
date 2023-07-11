@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -34,6 +35,7 @@ public class CTF extends JavaPlugin implements Listener {
     private String BLUE_WOOL_NAMESPACED = "CraftBlockData{minecraft:blue_wool}";
     private String RED_WOOL_NAMESPACED = "CraftBlockData{minecraft:red_wool}";
     private String WORLDNAME = "world";
+    private int MAX_INVENTORY_SIZE = 36;
 
     @Override
     public void onEnable() {
@@ -56,8 +58,12 @@ public class CTF extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         GameSingleton.removeBossBars();
+        GameSingleton.clearTeams();
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+        }
+        for (Team t : GameSingleton.getTeams()) {
+            t.removeSpeedBuff();
         }
     }
 
@@ -106,12 +112,13 @@ public class CTF extends JavaPlugin implements Listener {
                         }
                     }
                 }
-            }
+            } 
         }
         return true;
     }
 
     void startGame() {
+        GameSingleton.setSetupStep(7);
         Team blue = GameSingleton.getTeam("Blue");
         Team red = GameSingleton.getTeam("Red");
         blue.setOpponentTeam(red);
@@ -127,6 +134,11 @@ public class CTF extends JavaPlugin implements Listener {
             team.warpToSpawn();
             team.setFullHealthAndHunger();
             team.setSurvival();
+            team.setNameColor();
+        }
+        new Location(GameSingleton.getWorld(), GameSingleton.getCenterCoords(0), GameSingleton.getCenterCoords(1), GameSingleton.getCenterCoords(2)).getBlock().setType(Material.AIR);
+        for (Team t : GameSingleton.getTeams()) {
+            t.removeSpeedBuff();
         }
     }
 
@@ -136,7 +148,7 @@ public class CTF extends JavaPlugin implements Listener {
         Location placedBlockLocation = event.getBlock().getLocation();
         int setupStep = GameSingleton.getSetupStep();
 
-        if (setupStep != 6) {
+        if (setupStep != 7) {
             switch (setupStep) {
                 case 0:
                     GameSingleton.getTeam("Blue").setCoords(CoordinateType.STARTCOORDS, 0, placedBlockLocation.getX() + .5);
@@ -178,6 +190,14 @@ public class CTF extends JavaPlugin implements Listener {
                     GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, 1, placedBlockLocation.getY() + .5);
                     GameSingleton.getTeam("Red").setCoords(CoordinateType.RESPAWNCOORDS, 2, placedBlockLocation.getZ() + .5);
                     GameSingleton.setSetupStep(GameSingleton.getSetupStep() + 1);
+                    event.getPlayer().sendMessage("Place block at map center");
+                    break;
+                case 6:
+                    double[] centerCoords = new double[]{event.getBlock().getLocation().getX(), event.getBlock().getLocation().getY(), event.getBlock().getLocation().getZ()};
+                    System.out.println("write center");
+                    System.out.println(centerCoords);
+                    GameSingleton.setCenterCoords(centerCoords);
+                    GameSingleton.setSetupStep(GameSingleton.getSetupStep() + 1);
                     setupAndWriteConfig(event, placedBlockLocation);
                     break;
             }
@@ -188,7 +208,18 @@ public class CTF extends JavaPlugin implements Listener {
             event.setCancelled(false);
             return;
         }
-        if (setupStep < 6) {
+        if (setupStep < 7) {
+            return;
+        }
+        Location centerCoords = new Location(GameSingleton.getWorld(), GameSingleton.getCenterCoords(0), GameSingleton.getCenterCoords(1), GameSingleton.getCenterCoords(2));
+        if (blockEquals(centerCoords, placedBlockLocation)) {
+            if (placedBlock.equals(BLUE_WOOL_NAMESPACED)) {
+                GameSingleton.getTeam("Red").removeSpeedBuff();
+                GameSingleton.getTeam("Blue").giveSpeedBuff();
+            } else if (placedBlock.equals(RED_WOOL_NAMESPACED)) {
+                GameSingleton.getTeam("Blue").removeSpeedBuff();
+                GameSingleton.getTeam("Red").giveSpeedBuff();
+            }
             return;
         }
         if (placedBlock.equals(BLUE_WOOL_NAMESPACED) && blockEquals(GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), placedBlockLocation)) {
@@ -201,6 +232,34 @@ public class CTF extends JavaPlugin implements Listener {
         } else if (blockEquals(GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), event.getBlock().getLocation()) && placedBlock.equals(BLUE_WOOL_NAMESPACED)) {        
             updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Red"));
         }
+    }
+
+    @EventHandler
+    public void EntityDamageByEntityEvent(EntityDamageByEntityEvent event) {
+        if(!(event.getEntity() instanceof Player)) {
+            return;
+        } else {
+            Player damaged = (Player) event.getEntity();
+            Player damager = (Player) event.getDamager();
+            if (GameSingleton.getTeam(damaged.getName()).equals(GameSingleton.getTeam(damager.getName()))) {
+                event.setCancelled(true);
+            }
+        }   
+    }
+
+    private boolean checkNineBlockArea(Location location1, Location location2) {
+        for (int i = -1; i < 2; i++) {
+            for (int j = -1; j < 2; j++) {
+                for (int k = -1; k < 2; k++) {
+                    if (location1.getX() + i == location2.getX() &&
+                        location1.getY() + j == location2.getY() &&
+                        location1.getZ() + k == location2.getZ()) {
+                            return true;
+                        }
+                }
+            }
+        }
+        return false;
     }
 
     private void setupAndWriteConfig(BlockPlaceEvent event, Location placedBlockLocation) {
@@ -219,6 +278,10 @@ public class CTF extends JavaPlugin implements Listener {
                     }
                 }
             }
+            for (int i = 0; i < 3; i++) {
+                System.out.println(GameSingleton.getCenterCoords(i));
+                configData.append(GameSingleton.getCenterCoords(i)).append("\n");
+            }
             myWriter.write(configData.toString());
             event.getPlayer().sendMessage("Created " + GameSingleton.getConfigString() + ".txt!");
         } catch (IOException e) {
@@ -228,7 +291,7 @@ public class CTF extends JavaPlugin implements Listener {
     }
 
     private void updateInventoryAndCheckPoint(BlockPlaceEvent event, Team team) {
-        for (int i = 0; i < 36; i++) {
+        for (int i = 0; i < MAX_INVENTORY_SIZE; i++) {
             event.getPlayer().getInventory().setItem(i, team.getInventoryItem(i));
         }
         checkPoint(event);
@@ -239,6 +302,7 @@ public class CTF extends JavaPlugin implements Listener {
         if (team.getOpponentTeam().getStartBlock().equals(team.getWoolMaterial())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("The other team has your flag!");
+            return;
         }
         for (Team teamTemp : GameSingleton.getTeams()) {
             teamTemp.setBlocks();
@@ -254,6 +318,9 @@ public class CTF extends JavaPlugin implements Listener {
     private void winGame(Team team) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.sendTitle(team.getChatColor() + team.getName() + " team wins!", "but everyone's a winner in my heart <3",10,70,20);
+        }
+        for (Team t : GameSingleton.getTeams()) {
+            t.removeSpeedBuff();
         }
         GameSingleton.removeBossBars();
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -294,7 +361,7 @@ public class CTF extends JavaPlugin implements Listener {
         if (GameSingleton.getTeams().size() < 2) {
             return;
         }
-        if (GameSingleton.getSetupStep() < 6) {
+        if (GameSingleton.getSetupStep() < 7) {
             return;
         }
         Team team = GameSingleton.findPlayerTeam(event.getPlayer().getName());
@@ -306,15 +373,21 @@ public class CTF extends JavaPlugin implements Listener {
             event.setDropItems(false);
             pickedUpFlag(event.getPlayer());
         }
+        if (checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getGoalBlock().getLocation()) || checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getGoalBlock().getLocation())) {
+            event.setCancelled(true);
+        }
+        if (checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getStartBlock().getLocation()) || checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getStartBlock().getLocation())) {
+            event.setCancelled(true);
+        }
     }
 
     private void pickedUpFlag(Player player) {
         Team team = GameSingleton.findPlayerTeam(player.getName());
         team.clearInventory();
-        for (int i = 0; i < 36; i++) {
+        for (int i = 0; i < MAX_INVENTORY_SIZE; i++) {
             team.setInventory(player.getInventory().getItem(i), i);
         }
-        for (int i = 0; i < 36; i++) {
+        for (int i = 0; i < MAX_INVENTORY_SIZE; i++) {
             player.getInventory().setItem(i, new ItemStack(team.getOpponentTeam().getWoolMaterial()));
         }
         for (Player playerCurr : Bukkit.getOnlinePlayers()) {
@@ -358,10 +431,10 @@ public class CTF extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        if (GameSingleton.isOnTeam(event.getPlayer())) {
+        // if (GameSingleton.isOnTeam(event.getPlayer())) {
             GameSingleton.showBossBars(event.getPlayer());
             new IndividualScoreboard(GameSingleton.getTeams());
-        }
+        // }
     }
 
     private boolean blockEquals(Location one, Location two) {
