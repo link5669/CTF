@@ -1,3 +1,4 @@
+
 change name colors - done?
 should not be able to score if both flags are stolen
 no pvp in teams
