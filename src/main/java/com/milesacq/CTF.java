@@ -223,14 +223,14 @@ public class CTF extends JavaPlugin implements Listener {
             return;
         }
         if (blockEquals(GameSingleton.getTeam("Red").getGoalBlock().getLocation(), event.getBlock().getLocation()) && placedBlock.equals(RED_WOOL_NAMESPACED)) {
-            if (GameSingleton.getTeam("Blue").getFlagStatus()) {
+            if (GameSingleton.getTeam("Blue").getFlagStatus() && GameSingleton.getTeam("Blue").getFlagTakenByPlayer().equals(event.getPlayer().getName())) {
                 event.setCancelled(false);
                 updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Blue"));
             } else {
                 event.setCancelled(true);
             }
         } else if (blockEquals(GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), event.getBlock().getLocation()) && placedBlock.equals(BLUE_WOOL_NAMESPACED)) {  
-            if (GameSingleton.getTeam("Red").getFlagStatus()) {
+            if (GameSingleton.getTeam("Red").getFlagStatus() && GameSingleton.getTeam("Red").getFlagTakenByPlayer().equals(event.getPlayer().getName())) {
                 event.setCancelled(false);
                 updateInventoryAndCheckPoint(event, GameSingleton.getTeam("Red"));
             } else {
@@ -316,7 +316,7 @@ public class CTF extends JavaPlugin implements Listener {
             event.getPlayer().sendMessage("The other team has your flag!");
             return;
         }
-        team.setFlagStatus(false);
+        team.setFlagStatus(false, "none");
         for (Team teamTemp : GameSingleton.getTeams()) {
             teamTemp.setBlocks();
         }
@@ -382,7 +382,7 @@ public class CTF extends JavaPlugin implements Listener {
             event.getPlayer().sendMessage("That's your flag!");
             event.setCancelled(true);
         } else if (team.getOpponentTeam().checkFlag(event.getBlock())) {
-            team.setFlagStatus(true);
+            team.setFlagStatus(true, event.getPlayer().getName());
             event.setCancelled(false);
             event.setDropItems(false);
             pickedUpFlag(event.getPlayer());

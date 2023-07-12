@@ -9,3 +9,5 @@ scoreboard doesnt update player count
 center thing
 make goal platform invincible
 cant place anything on top of it
+
+also make sure tagteaming placing flag doesnt work

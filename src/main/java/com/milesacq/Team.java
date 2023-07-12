@@ -32,6 +32,7 @@ public class Team {
     private Team opponentTeam;
     private Material woolMaterial;
     private boolean flagStatus;
+    private String flagTakenByPlayer;
 
     public Team(int numMembers, TeamType color, String name, ChatColor chatColor, BarColor barColor, Material woolMaterial) {
         this.members = new Player[numMembers];
@@ -47,6 +48,7 @@ public class Team {
             bossBar.addPlayer(p);
         }
         this.flagStatus = false;
+        this.flagTakenByPlayer = "none";
     }
 
     public Block getStartBlock() {
@@ -112,12 +114,17 @@ public class Team {
         }
     }
 
-    public void setFlagStatus(boolean taken) {
+    public void setFlagStatus(boolean taken, String player) {
         flagStatus = taken;
+        flagTakenByPlayer = player;
     }
 
     public boolean getFlagStatus() {
         return flagStatus;
+    }
+
+    public String getFlagTakenByPlayer() {
+        return flagTakenByPlayer;
     }
 
     public boolean checkStartEmpty() {
