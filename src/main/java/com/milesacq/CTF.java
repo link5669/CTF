@@ -1,16 +1,20 @@
 package com.milesacq;
 
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -28,6 +32,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 
@@ -248,16 +253,37 @@ public class CTF extends JavaPlugin implements Listener {
         } else {
             Player damaged = (Player) event.getEntity();
             Player damager = (Player) event.getDamager();
-            if (GameSingleton.getTeam(damaged.getName()).equals(GameSingleton.getTeam(damager.getName()))) {
+            if (GameSingleton.findPlayerTeam(damaged.getName()).equals(GameSingleton.findPlayerTeam(damager.getName()))) {
                 event.setCancelled(true);
             }
         }   
     }
 
-    private boolean checkNineBlockArea(Location location1, Location location2, boolean skipCenter) {
+    private boolean checkNineBlockArea(Location location2, Location location1, boolean skipCenter) {
         for (int i = -1; i < 2; i++) {
             for (int j = -1; j < 2; j++) {
                 for (int k = -1; k < 2; k++) {
+                    if (location1.getX() + i == location2.getX() &&
+                        location1.getY() + j == location2.getY() &&
+                        location1.getZ() + k == location2.getZ()) {
+                            if (skipCenter) {
+                                if ( i == 0 && j == 0 && k == 0) {
+                                    continue;
+                                }
+                            } else {
+                                return true;
+                            }
+                        }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean checkTwentyFiveBlockArea(Location location1, Location location2, boolean skipCenter) {
+        for (int i = -2; i < 3; i++) {
+            for (int j = -2; j < 3; j++) {
+                for (int k = -2; k < 3; k++) {
                     if (location1.getX() + i == location2.getX() &&
                         location1.getY() + j == location2.getY() &&
                         location1.getZ() + k == location2.getZ()) {
@@ -309,9 +335,21 @@ public class CTF extends JavaPlugin implements Listener {
         checkPoint(event);
     }
 
+    @EventHandler
+    public void onExplosionEvent(EntityExplodeEvent e){
+       for (Block block : e.blockList()) {
+             if (checkTwentyFiveBlockArea(block.getLocation(), GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), false) || checkTwentyFiveBlockArea(block.getLocation(), GameSingleton.getTeam("Red").getGoalBlock().getLocation(), false)) {
+            e.setCancelled(true);
+        }
+        if (checkNineBlockArea(block.getLocation(), GameSingleton.getTeam("Blue").getStartBlock().getLocation(), true) || checkNineBlockArea(block.getLocation(), GameSingleton.getTeam("Red").getStartBlock().getLocation(), true)) {
+            e.setCancelled(true);
+        }
+       }
+    }
+
     private void checkPoint(BlockPlaceEvent event) {
         Team team = GameSingleton.findPlayerTeam(event.getPlayer().getName());
-        if (team.getOpponentTeam().getStartBlock().equals(team.getWoolMaterial())) {
+        if (team.getOpponentTeam().getStartBlock().getType().equals(team.getWoolMaterial())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("The other team has your flag!");
             return;
@@ -387,7 +425,7 @@ public class CTF extends JavaPlugin implements Listener {
             event.setDropItems(false);
             pickedUpFlag(event.getPlayer());
         }
-        if (checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), false) || checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getGoalBlock().getLocation(), false)) {
+        if (checkTwentyFiveBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getGoalBlock().getLocation(), false) || checkTwentyFiveBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getGoalBlock().getLocation(), false)) {
             event.setCancelled(true);
         }
         if (checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Blue").getStartBlock().getLocation(), true) || checkNineBlockArea(event.getBlock().getLocation(), GameSingleton.getTeam("Red").getStartBlock().getLocation(), true)) {
@@ -449,6 +487,11 @@ public class CTF extends JavaPlugin implements Listener {
             GameSingleton.showBossBars(event.getPlayer());
             new IndividualScoreboard(GameSingleton.getTeams());
         // }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        new IndividualScoreboard(GameSingleton.getTeams());
     }
 
     private boolean blockEquals(Location one, Location two) {
