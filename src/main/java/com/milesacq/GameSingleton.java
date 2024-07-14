@@ -99,14 +99,14 @@ public final class GameSingleton {
         ItemMeta blueMeta = blueWool.getItemMeta();
         blueMeta.setDisplayName("Blue Flag");
         blueWool.setItemMeta(blueMeta);
-        blueMeta.addEnchant(Enchantment.LUCK, 10, true);
+        blueMeta.addEnchant(Enchantment.FORTUNE, 10, true);
         blueWool.setItemMeta(blueMeta);
         player.getInventory().setItem(1, blueWool);
         ItemStack redWool = new ItemStack(Material.RED_WOOL, 1);
         ItemMeta redMeta = blueWool.getItemMeta();
         redMeta.setDisplayName("Red Flag");
         redWool.setItemMeta(redMeta);
-        redMeta.addEnchant(Enchantment.LUCK, 10, true);
+        redMeta.addEnchant(Enchantment.FORTUNE, 10, true);
         redWool.setItemMeta(redMeta);
         player.getInventory().setItem(2, redWool);
     }
